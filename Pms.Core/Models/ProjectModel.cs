@@ -1,4 +1,5 @@
 ﻿using Pms.Core.Entities;
+using Pms.Core.Enums;
 
 namespace Pms.Core.Models
 {

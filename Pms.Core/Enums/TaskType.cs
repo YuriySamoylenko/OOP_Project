@@ -1,4 +1,4 @@
-﻿namespace Pms.Core.Entities
+﻿namespace Pms.Core.Enums
 {
     public enum TaskType
     {
