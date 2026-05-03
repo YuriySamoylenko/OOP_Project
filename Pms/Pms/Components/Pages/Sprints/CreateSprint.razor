@@ -1,0 +1,65 @@
+﻿@page "/projects/{ProjectId:int}/sprints/new"
+@using Pms.Bll.Interfaces
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@inject ISprintService SprintService
+@inject NavigationManager Nav
+@inject INotificationService Notify
+
+<h3>Create New Sprint</h3>
+
+<EditForm Model="@newSprint" OnValidSubmit="HandleSubmit" FormName="SprintCreateForm">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>Sprint Name</label>
+        <InputText @bind-Value="newSprint.Name" class="form-control" placeholder="Enter Sprint Name..." />
+        <ValidationMessage For="@(() => newSprint.Name)" class="text-danger" />
+    </div>
+
+    @*     <div class="row">
+        <div class="col">
+            <label>Start Date</label>
+            <InputDate @bind-Value="newSprint.StartDate" class="form-control" />
+        </div>
+        <div class="col">
+            <label>End Date</label>
+            <InputDate @bind-Value="newSprint.EndDate" class="form-control" />
+        </div>
+    </div> *@
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">Create Sprint</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    private SprintModel newSprint = new();
+
+    protected override void OnInitialized()
+    {
+        newSprint.ProjId = ProjectId;
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            await SprintService.CreateSprint(newSprint);
+            Nav.NavigateTo($"/projects/{ProjectId}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+        catch (Exception)
+        {
+            Notify.NotifyError("An error occurred while creating the project.");
+        }
+    }
+
+    private void Cancel() => Nav.NavigateTo($"/projects/{ProjectId}");
+}

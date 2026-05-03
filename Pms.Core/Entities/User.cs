@@ -14,5 +14,9 @@ namespace Pms.Core.Entities
         public string LastName { get; set; }
 
         public virtual IList<Participant> Participants { get; set; }
+
+        public virtual bool CanViewAllProjects() => false;
+
+        public virtual bool CanDeleteProject() => false;
     }
 }

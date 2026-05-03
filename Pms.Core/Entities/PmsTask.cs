@@ -11,12 +11,16 @@ namespace Pms.Core.Entities
 
         public PmsTask(TaskModel model) : this()
         {
+            this.ProjectId = model.ProjId;
+            this.SprintId = model.SprintId;
             this.Summary = model.Summary;
             this.Description = model.Description;
             this.TaskType = model.TaskType;
             this.Status = model.Status;
             this.Priority = model.Priority;
             this.Severity = model.Severity;
+            this.CreatorId = model.CreatorId;
+            this.AssigneeId = model.AssigneeId;
         }
 
         public string Summary { get; set; }

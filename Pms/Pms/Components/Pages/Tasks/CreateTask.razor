@@ -1,0 +1,50 @@
+﻿@page "/projects/{ProjectId:int}/tasks/new"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Bll.Interfaces
+@using Pms.Core.Entities
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject UserManager<User> UserManager
+@inject ITaskService TaskService
+@inject NavigationManager Nav
+
+<div class="container py-4">
+    <h3>Create Task for Project #@ProjectId</h3>
+    <hr />
+
+    <div class="card shadow-sm p-4" style="max-width: 800px;">
+        <TaskEditor Model="newTask" OnSave="HandleCreate" />
+        <button class="btn btn-link mt-2" @onclick="Cancel">Back to Board</button>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+    [Parameter] public int ProjectId { get; set; }
+
+    [SupplyParameterFromForm(FormName = "TaskCreateForm")]
+    private TaskModel newTask { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await this.AuthStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user != null)
+        {
+            newTask.CreatorId = user.Id;
+        }
+        newTask.ProjId = ProjectId;
+    }
+
+    private async Task HandleCreate()
+    {
+        await TaskService.CreateTask(newTask);
+        Nav.NavigateTo($"/projects/{ProjectId}");
+    }
+
+    private void Cancel() => Nav.NavigateTo($"/projects/{ProjectId}");
+}

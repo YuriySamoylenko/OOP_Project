@@ -1,0 +1,168 @@
+﻿@page "/projects/{ProjectId:int}/tasks/{TaskId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Bll.Interfaces
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@inject ITaskService TaskService
+@inject ISprintService SprintService
+@inject IProjectService ProjectService
+@inject INotificationService Notify
+@inject IDataTransfer DataTransfer
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
+            <li class="breadcrumb-item"><a href="/projects/@ProjectId">Project Board</a></li>
+            <li class="breadcrumb-item active">Task #@TaskId</li>
+        </ol>
+    </nav>
+
+    @if (model == null)
+    {
+        <div class="spinner-border text-primary"></div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">
+                @if (!isEditing)
+                {
+                    @model.Summary
+                }
+                else
+                {
+
+                    <span>Editing Task</span>
+                }
+            </h2>
+            <div class="btn-group ms-2">
+                <button class="btn btn-outline-info" @onclick="@(() => ExportTask("word"))">
+                    Export Docx
+                </button>
+                <button class="btn btn-outline-success" @onclick="@(() => ExportTask("excel"))">
+                    Export Xlsx
+                </button>
+            </div>
+            <div>
+                @if (!isEditing)
+                {
+                    <button class="btn btn-outline-primary" @onclick="() => isEditing = true">Edit Task</button>
+                }
+                else
+                {
+                    <button class="btn btn-secondary" @onclick="() => isEditing = false">Cancel</button>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @if (!isEditing)
+                {
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="text-muted">Description</h6>
+                            <p class="border p-3 bg-light rounded">@model.Description</p>
+                        </div>
+                        <div class="col-md-4 border-start">
+                            <p><strong>Creator:</strong> <span class="text-primary">@GetUserName(model.CreatorId)</span></p>
+                            <p>
+                                <strong>Assignee:</strong>
+                                <span class="badge @(string.IsNullOrEmpty(model.AssigneeId) ? "bg-warning text-dark" : "bg-success")">
+                                    @GetUserName(model.AssigneeId)
+                                </span>
+                            </p>
+                            <p>
+                                <strong>Sprint:</strong>
+                                <span class="badge @(model.SprintId > 0 ? "bg-primary" : "bg-secondary")">
+                                    @GetSprintName(model.SprintId)
+                                </span>
+                            </p>
+                            <p><strong>Status:</strong> <span class="badge bg-info">@model.Status</span></p>
+                            <p><strong>Priority:</strong> @model.Priority</p>
+                            <p><strong>Type:</strong> @model.TaskType</p>
+                            <p><strong>Severity:</strong> @model.Severity</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <TaskEditor Model="model" Sprints="availableSprints" Participants="projectParticipants" OnSave="HandleUpdate" />
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TaskId { get; set; }
+
+    [SupplyParameterFromForm(FormName = "TaskEditForm")]
+    private TaskModel? model { get; set; }
+
+    private bool isEditing = false;
+
+    private IList<SprintModel> availableSprints = new List<SprintModel>();
+    private IList<ParticipantModel> projectParticipants = new List<ParticipantModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (model == null)
+        {
+            var task = await TaskService.GetTask(TaskId);
+            if (task != null) model = task;
+        }
+
+        availableSprints = await SprintService.GetSprints(ProjectId);
+        projectParticipants = await ProjectService.GetParticipants(ProjectId);
+    }
+
+    private async Task HandleUpdate()
+    {
+        await TaskService.UpdateTask(model!);
+        isEditing = false;
+        StateHasChanged();
+    }
+
+    private async Task ExportTask(string format)
+    {
+        try
+        {
+            var result = DataTransfer.ExportTask(model, format);
+            if (result != null)
+            {
+                var fileBytes = result.Value.Value;
+                using var stream = new MemoryStream(fileBytes);
+                var dotNetStreamRef = new DotNetStreamReference(stream);
+                await JS.InvokeVoidAsync("downloadFileFromStream", result.Value.Key, dotNetStreamRef);
+            }
+            else
+            {
+                Notify.NotifyError($"Export failed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notify.NotifyError($"Export failed: {ex.Message}");
+        }
+    }
+
+    private string GetSprintName(int? sprintId)
+    {
+        if (sprintId == null || sprintId == 0) return "Backlog (No Sprint)";
+        return availableSprints.FirstOrDefault(s => s.Id == sprintId)?.Name ?? "Unknown Sprint";
+    }
+
+    private string GetUserName(string? userId)
+    {
+        if (string.IsNullOrEmpty(userId)) return "Unassigned";
+        return projectParticipants.FirstOrDefault(p => p.UserId == userId)?.UserName ?? "Unknown User";
+    }
+}

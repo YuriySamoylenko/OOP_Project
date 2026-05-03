@@ -13,12 +13,16 @@ namespace Pms.Data
 
         public DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
 
+        public DbSet<Manager> Managers => Set<Manager>();
+        public DbSet<Member> Memberss => Set<Member>();
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<User>(e => e.Property(p => p.FirstName).IsRequired().HasMaxLength(256));
-            modelBuilder.Entity<User>(e => e.Property(p => p.FirstName).IsRequired().HasMaxLength(256));
+            modelBuilder.Entity<User>(e => e.Property(p => p.LastName).IsRequired().HasMaxLength(256));
 
             modelBuilder.Entity<Project>(e => e.Property(p => p.Name).IsRequired().HasMaxLength(256));
             modelBuilder.Entity<Project>(e => e.Property(p => p.Code).IsRequired().HasMaxLength(16));

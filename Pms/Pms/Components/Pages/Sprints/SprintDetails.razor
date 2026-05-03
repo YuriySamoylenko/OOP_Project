@@ -1,0 +1,206 @@
+﻿@page "/projects/{ProjectId:int}/sprints/{SprintId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Bll.Interfaces
+@using Pms.Core.Models
+@using Pms.Core.Enums
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject NavigationManager Nav
+@inject ISprintService SprintService
+@inject ITaskService TaskService
+@inject INotificationService Notify
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
+            <li class="breadcrumb-item"><a href="/projects/@ProjectId">Project Board</a></li>
+            <li class="breadcrumb-item active">Sprint: @(model?.Name ?? "...")</li>
+        </ol>
+    </nav>
+
+    @if (model == null)
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">
+                @if (!isEditing)
+                {
+                    <span>@model.Name</span>
+                    <span class="badge @(model.Status == Status.InProgress ? "bg-success" : "bg-secondary") ms-2 fs-6">
+                        @model.Status
+                    </span>
+                }
+                else
+                {
+                    <span>Editing Sprint</span>
+                }
+            </h2>
+            <div>
+                @if (!isEditing)
+                {
+                    <button class="btn btn-outline-primary" @onclick="() => isEditing = true">
+                        <i class="bi bi-pencil"></i> Edit Sprint
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-secondary" @onclick="() => isEditing = false">Cancel</button>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                @if (!isEditing)
+                {
+                    <div class="row">
+@*                         <div class="col-md-4">
+                            <p class="text-muted mb-1">Duration</p>
+                            <p class="fw-bold">
+                                <i class="bi bi-calendar-range me-2"></i>
+                                @model.StartDate.ToShortDateString() - @model.EndDate.ToShortDateString()
+                            </p>
+                        </div> *@
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Status</p>
+                            <p class="fw-bold">@model.Status</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Tasks Count</p>
+                            <p class="fw-bold">@(sprintTasks?.Count ?? 0) tasks assigned</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <EditForm Model="model" OnValidSubmit="HandleUpdate">
+                        <DataAnnotationsValidator />
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Sprint Name</label>
+                                <InputText @bind-Value="model.Name" class="form-control" />
+                            </div>
+@*                             <div class="col-md-3">
+                                <label class="form-label">Start Date</label>
+                                <InputDate @bind-Value="model.StartDate" class="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">End Date</label>
+                                <InputDate @bind-Value="model.EndDate" class="form-control" />
+                            </div> *@
+                            <div class="col-12 mt-3">
+                                <button type="submit" class="btn btn-success">Save Changes</button>
+                            </div>
+                        </div>
+                    </EditForm>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Tasks in this Sprint</span>
+                <button class="btn btn-sm btn-outline-success" @onclick="GoToAddTask">
+                    <i class="bi bi-plus"></i> Create Task
+                </button>
+            </div>
+            <div class="card-body p-0">
+                @if (sprintTasks == null || !sprintTasks.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-list-task h1"></i>
+                        <p class="mt-2">No tasks assigned to this sprint.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Summary</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in sprintTasks)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a href="/projects/@ProjectId/tasks/@task.Id" class="fw-bold text-decoration-none">
+                                                @task.Summary
+                                            </a>
+                                        </td>
+                                        <td><span class="badge bg-info">@task.Status</span></td>
+                                        <td>@task.Priority</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick='() => Nav.NavigateTo($"/projects/{ProjectId}/tasks/{task.Id}")'>
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int SprintId { get; set; }
+
+    private SprintModel? model;
+    private List<TaskModel>? sprintTasks;
+    private bool isEditing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSprintData();
+    }
+
+    private async Task LoadSprintData()
+    {
+        model = await SprintService.GetSprint(SprintId);
+        
+        if (model != null)
+        {
+            var allTasks = await TaskService.GetTasks(ProjectId);
+            sprintTasks = allTasks.Where(t => t.SprintId == SprintId).ToList();
+        }
+        else
+        {
+            Notify.NotifyError("Sprint not found.");
+            Nav.NavigateTo($"/projects/{ProjectId}");
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        try
+        {
+            await SprintService.UpdateSprint(model);
+        }
+        catch (Exception ex)
+        {
+            Notify.NotifyError($"Error: {ex.Message}");
+        }
+    }
+
+    private void GoToAddTask()
+    {
+        Nav.NavigateTo($"/projects/{ProjectId}/tasks/new?sprintId={SprintId}");
+    }
+}

@@ -1,0 +1,75 @@
+﻿@using Microsoft.AspNetCore.Components
+@using Pms.Bll.Interfaces
+@implements IDisposable
+@inject INotificationService NotificationService
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="notification-container">
+        <div class="alert alert-danger alert-dismissible fade show shadow-lg" role="alert">
+            <div class="d-flex align-items-center">
+                <span class="me-2">⚠️</span>
+                <div>
+                    <strong>System Error</strong>
+                    <div class="small">@_errorMessage</div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" @onclick="ClearError" aria-label="Close"></button>
+        </div>
+    </div>
+}
+
+<style>
+    .notification-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 320px;
+        max-width: 450px;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @@at-root {
+        @@keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    }
+</style>
+
+@code {
+    private string? _errorMessage;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        NotificationService.OnErrorMessage += HandleError;
+    }
+
+    private void HandleError(string message)
+    {
+        _errorMessage = message;
+        
+        _timer?.Dispose();
+        _timer = new System.Threading.Timer(_ => 
+        {
+            _errorMessage = null;
+            InvokeAsync(StateHasChanged);
+        }, null, 7000, System.Threading.Timeout.Infinite);
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ClearError()
+    {
+        _errorMessage = null;
+        _timer?.Dispose();
+    }
+
+    public void Dispose()
+    {
+        NotificationService.OnErrorMessage -= HandleError;
+        _timer?.Dispose();
+    }
+}

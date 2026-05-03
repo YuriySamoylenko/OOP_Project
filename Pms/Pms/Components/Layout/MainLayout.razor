@@ -1,8 +1,10 @@
-﻿@inherits LayoutComponentBase
+﻿@using Pms.Bll.Interfaces
+@inherits LayoutComponentBase
+@inject INotificationService NotificationService
 
 <div class="page">
     <div class="sidebar">
-        <NavMenu />
+        <NavMenu @rendermode="InteractiveServer" />
     </div>
 
     <main>
@@ -12,6 +14,8 @@
             </div>
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
+
+        <NotificationDisplay @rendermode="InteractiveServer" />
 
         <article class="content px-4">
             @Body

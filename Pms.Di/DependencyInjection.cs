@@ -30,6 +30,10 @@ namespace Pms.Di
             // 4. Register your Repositories and Services
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IProjectService, ProjectService>();
+            services.AddScoped<ISprintService, SprintService>();
+            services.AddScoped<ITaskService, TaskService>();
+            services.AddScoped<IDataTransfer, DataTransfer>();
+            services.AddSingleton<INotificationService, NotificationService>();
             // services.AddScoped<IUserInProjectService, UserInProjectService>();
 
             return services;

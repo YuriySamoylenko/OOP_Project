@@ -1,0 +1,127 @@
+﻿@page "/projects"
+@using Microsoft.AspNetCore.Identity
+@using Pms.Bll.Interfaces
+@using Pms.Core.Entities
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Core.Enums
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject UserManager<User> UserManager
+@inject IProjectService ProjectService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Projects</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Projects Management</h1>
+        <button class="btn btn-primary shadow-sm" @onclick="CreateNewProject">
+            <span class="bi bi-plus-lg me-1"></span> New Project
+        </button>
+    </div>
+
+    @if (projects == null)
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!projects.Any())
+    {
+        <div class="alert alert-info shadow-sm" role="alert">
+            No projects found. Click "New Project" to get started!
+        </div>
+    }
+    else
+    {
+        <div class="card shadow mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var project in projects)
+                            {
+                                <tr>
+                                    <td class="align-middle fw-bold">
+                                        <a href="/projects/@project.Id" class="fw-bold text-decoration-none">
+                                            @project.Name
+                                        </a>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="badge @GetStatusClass(project.Status)">
+                                            @project.Status
+                                        </span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" @onclick="() => EditProject(project.Id)">
+                                                <span class="bi bi-pencil"></span> Edit
+                                            </button>
+                                            @if (project.CanDelete)
+                                            {
+                                                <button class="btn btn-outline-danger" @onclick="() => DeleteProject(project.Id)">
+                                                    <span class="bi bi-trash"></span> Delete
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
+    private IList<ProjectModel>? projects;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+    }
+
+    private async Task LoadProjects()
+    {
+        var authState = await this.AuthStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user != null)
+        {
+            projects = await ProjectService.GetProjects(user);
+        }
+    }
+
+    private void CreateNewProject() => NavigationManager.NavigateTo("/projects/new");
+
+    private void EditProject(int id) => NavigationManager.NavigateTo($"/projects/edit/{id}");
+
+    private async Task DeleteProject(int id)
+    {
+        await ProjectService.DeleteProject(id);
+        await LoadProjects();
+    }
+
+    private string GetStatusClass(Status status) => status switch
+    {
+        Status.InProgress => "bg-success",
+        Status.New => "bg-info",
+        Status.Completed => "bg-secondary",
+        _ => "bg-dark"
+    };
+}

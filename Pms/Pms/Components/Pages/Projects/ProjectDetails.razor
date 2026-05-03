@@ -1,0 +1,220 @@
+﻿@page "/projects/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Bll.Interfaces
+@using Pms.Core.Enums
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject IProjectService ProjectService
+@inject ISprintService SprintService
+@inject ITaskService TaskService
+@inject NavigationManager Nav
+
+<div class="container-fluid py-4">
+    @if (project == null)
+    {
+        <div class="spinner-border text-primary" role="status"></div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
+                        <li class="breadcrumb-item active">@project.Name</li>
+                    </ol>
+                </nav>
+                <h1 class="h2">@project.Name</h1>
+                <span class="badge @GetStatusClass(project.Status)">@project.Status</span>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-outline-dark" @onclick="GoToParticipants">
+                    <i class="bi bi-people"></i> Manage Team
+                </button>
+                <button class="btn btn-outline-secondary" @onclick="GoBack">
+                    <span class="bi bi-arrow-left"></span> Back
+                </button>
+                <button class="btn btn-primary" @onclick="GoToEdit">
+                    <span class="bi bi-pencil"></span> Edit Project
+                </button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white fw-bold">Project Details</div>
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Project ID</p>
+                        <p class="fw-bold">#@project.Id</p>
+
+                        <p class="text-muted mb-1">Short Name</p>
+                        <p class="fw-bold">#@project.Code</p>
+
+                        <p class="text-muted mb-1">Created Date</p>
+                        <p class="fw-bold">@project.Created.ToShortDateString()</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Project Tasks</span>
+                        <button class="btn btn-sm btn-success" @onclick="GoToCreateTask">
+                            <span class="bi bi-plus"></span> Add Task
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        @* Changed p-0 for table alignment *@
+                        @if (tasks == null || !tasks.Any())
+                        {
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-clipboard-check h1"></i>
+                                <p class="mt-2">No tasks found in this project yet.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Summary</th>
+                                            <th>Status</th>
+                                            <th>Priority</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var task in tasks)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a href="/projects/@Id/tasks/@task.Id" class="fw-bold text-decoration-none">
+                                                        @task.Summary
+                                                    </a>
+                                                </td>
+                                                <td><span class="badge bg-info">@task.Status</span></td>
+                                                <td>@task.Priority</td>
+                                                <td class="text-end">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToEditTask(task.Id)">
+                                                        Edit
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-12 mt-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="bi bi-calendar3 me-2"></i>Sprints</span>
+                        <button class="btn btn-sm btn-success" @onclick="GoToCreateSprint">
+                            <span class="bi bi-plus-circle"></span> Create Sprint
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (sprints == null || !sprints.Any())
+                        {
+                            <div class="text-center py-4 text-muted">
+                                <p>No sprints planned for this project.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Sprint Name</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var sprint in sprints)
+                                        {
+                                            <tr>
+                                                <td class="fw-bold">
+                                                    <a href="/projects/@Id/sprints/@sprint.Id" class="fw-bold text-decoration-none">
+                                                        @sprint.Name
+                                                    </a>
+                                                </td>
+                                                @* <td>@sprint.StartDate.ToShortDateString() - @sprint.EndDate.ToShortDateString()</td> *@
+                                                <td>
+                                                    <span class="badge @(sprint.Status == Status.InProgress ? "bg-success" : "bg-secondary")">
+                                                        @sprint.Status
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <button class="btn btn-sm btn-outline-primary" title="Edit Sprint" @onclick="() => GoToEditSprint(sprint.Id)">
+                                                        Edit
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private IList<SprintModel> sprints = new List<SprintModel>();
+    private List<TaskModel> tasks = new();
+
+    private ProjectModel? project;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var model = await ProjectService.GetProject(Id);
+        if (model == null)
+        {
+            Nav.NavigateTo("/projects");
+            return;
+        }
+        project = model;
+
+        var taskModels = await TaskService.GetTasks(Id);
+        tasks = taskModels;
+
+        var sprintModels = await SprintService.GetSprints(Id);
+        sprints = sprintModels;
+    }
+
+    private void GoBack() => Nav.NavigateTo("/projects");
+    private void GoToEdit() => Nav.NavigateTo($"/projects/edit/{Id}");
+
+    private void GoToCreateTask() => Nav.NavigateTo($"/projects/{Id}/tasks/new");
+    private void GoToEditTask(int taskId) => Nav.NavigateTo($"/projects/{Id}/tasks/{taskId}");
+
+    private void GoToCreateSprint() => Nav.NavigateTo($"/projects/{Id}/sprints/new");
+    private void GoToEditSprint(int sprintId) => Nav.NavigateTo($"/projects/{Id}/sprints/{sprintId}");
+
+    private void GoToParticipants() => Nav.NavigateTo($"/projects/{Id}/participants");
+
+    private string GetStatusClass(Status status) => status switch
+    {
+        Status.InProgress => "bg-success",
+        Status.New => "bg-info",
+        Status.Completed => "bg-secondary",
+        _ => "bg-dark"
+    };
+}

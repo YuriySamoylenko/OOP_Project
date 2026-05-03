@@ -1,0 +1,83 @@
+﻿@page "/projects/edit/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Bll.Interfaces
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject IProjectService ProjectService
+@inject NavigationManager Nav
+@inject INotificationService Notify
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/projects">Projects</a></li>
+            <li class="breadcrumb-item active">Edit Project</li>
+        </ol>
+    </nav>
+
+    <h3>Edit Project: @projectModel?.Name</h3>
+    <hr />
+
+    @if (projectModel == null)
+    {
+        <div class="d-flex align-items-center">
+            <strong>Loading project data...</strong>
+            <div class="spinner-border ms-auto" role="status" aria-hidden="true"></div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm p-4" style="max-width: 600px;">
+            <ProjectEditor Model="projectModel"
+                           ButtonText="Update Project"
+                           OnValidSubmit="UpdateProject"
+                           OnCancel="GoBack" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [SupplyParameterFromForm(FormName = "ProjectEntryForm")]
+    public ProjectModel? projectModel { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (projectModel == null)
+        {
+            var model = await ProjectService.GetProject(Id);
+            if (model == null)
+            {
+                Nav.NavigateTo("/projects");
+                return;
+            }
+
+            projectModel = model;
+        }
+    }
+
+    private async Task UpdateProject()
+    {
+        if (projectModel != null)
+        {
+            try
+            {
+                await ProjectService.UpdateProject(projectModel);
+                Nav.NavigateTo("/projects");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Notify.NotifyError(ex.Message);
+            }
+            catch (Exception)
+            {
+                Notify.NotifyError("An error occurred while creating the project.");
+            }
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/projects");
+}

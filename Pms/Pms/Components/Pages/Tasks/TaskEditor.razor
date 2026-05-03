@@ -1,0 +1,96 @@
+﻿@using Pms.Core.Models
+@using Pms.Core.Enums
+
+<EditForm Model="Model" OnValidSubmit="HandleSubmit" FormName="TaskForm">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Summary</label>
+        <InputText @bind-Value="Model.Summary" class="form-control" />
+        <ValidationMessage For="@(() => Model.Summary)" class="text-danger" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Assignee</label>
+            <InputSelect @bind-Value="Model.AssigneeId" class="form-select">
+                <option value="">-- Unassigned --</option>
+                @if (Participants != null)
+                {
+                    @foreach (var participant in Participants)
+                    {
+                        <option value="@participant.UserId">@participant.UserName</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Sprint</label>
+            <InputSelect @bind-Value="Model.SprintId" class="form-select">
+                <option value="">-- Backlog --</option>
+                @if (Sprints != null)
+                {
+                    @foreach (var sprint in Sprints)
+                    {
+                        <option value="@sprint.Id">@sprint.Name</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Type</label>
+            <InputSelect @bind-Value="Model.TaskType" class="form-select">
+                @foreach (var type in Enum.GetValues<TaskType>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Priority</label>
+            <InputSelect @bind-Value="Model.Priority" class="form-select">
+                @foreach (var p in Enum.GetValues<Priority>())
+                {
+                    <option value="@p">@p</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Status</label>
+            <InputSelect @bind-Value="Model.Status" class="form-select">
+                @foreach (var type in Enum.GetValues<PmsTaskStatus>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Severity</label>
+            <InputSelect @bind-Value="Model.Severity" class="form-select">
+                @foreach (var p in Enum.GetValues<Severity>())
+                {
+                    <option value="@p">@p</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <InputTextArea @bind-Value="Model.Description" class="form-control" rows="4" />
+        <ValidationMessage For="@(() => Model.Description)" class="text-danger" />
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <ValidationSummary /> <button type="submit" class="btn btn-primary">Save Task</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public TaskModel Model { get; set; } = new();
+    [Parameter] public IList<SprintModel> Sprints { get; set; }
+    [Parameter] public IList<ParticipantModel> Participants { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private async Task HandleSubmit() => await OnSave.InvokeAsync();
+}

@@ -1,0 +1,45 @@
+﻿@page "/projects/new"
+@using Microsoft.AspNetCore.Authorization
+@using Pms.Bll.Interfaces
+@using Pms.Core.Models
+@rendermode InteractiveServer
+
+@attribute [Authorize]
+@inject IProjectService ProjectService
+@inject NavigationManager Nav
+@inject INotificationService Notify
+
+<div class="container mt-4">
+    <h3>Create New Project</h3>
+    <hr />
+
+    <div class="card shadow-sm p-4" style="max-width: 600px;">
+        <ProjectEditor Model="newProject"
+                       ButtonText="Create Project"
+                       OnValidSubmit="SaveProject"
+                       OnCancel="GoBack" />
+    </div>
+</div>
+
+@code {
+    private ProjectModel newProject = new();
+
+    private async Task SaveProject()
+    {
+        try
+        {
+            await ProjectService.CreateProject(newProject);
+            Nav.NavigateTo("/projects");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+        catch (Exception)
+        {
+            Notify.NotifyError("An error occurred while creating the project.");
+        }
+    }
+
+    private void GoBack() => Nav.NavigateTo("/projects");
+}

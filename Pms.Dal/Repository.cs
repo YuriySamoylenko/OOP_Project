@@ -2,6 +2,8 @@
 using Pms.Core.Entities;
 using Pms.Core.Interfaces;
 using Pms.Data;
+using System.Linq.Expressions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Pms.Dal
 {
@@ -14,16 +16,46 @@ namespace Pms.Dal
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
 
-        public async virtual Task<IEnumerable<T>> GetAllAsync()
+        public async virtual Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes)
         {
             using var context = await _factory.CreateDbContextAsync();
             return await context.Set<T>().AsNoTracking().ToListAsync();
         }
 
-        public virtual async Task<T> GetByIdAsync(int id)
+        public async virtual Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
         {
             using var context = await _factory.CreateDbContextAsync();
-            return await context.Set<T>().FindAsync(id);
+            IQueryable<T> query = context.Set<T>();
+            if (includes != null)
+            {
+                query = includes.Aggregate(query, (current, include) => current.Include(include));
+            }
+            return await query.Where<T>(predicate).ToListAsync();
+        }
+
+        public virtual async Task<T> GetByIdAsync(int id, params Expression<Func<T, object>>[] includes)
+        {
+            using var context = await _factory.CreateDbContextAsync();
+            IQueryable<T> query = context.Set<T>();
+            if (includes != null)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+            return await query.FirstAsync(t => t.Id == id);
+        }
+
+        public virtual async Task<T> GetByConditionAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        {
+            using var context = await _factory.CreateDbContextAsync();
+            IQueryable<T> query = context.Set<T>();
+            if (includes != null)
+            {
+                query = includes.Aggregate(query, (current, include) => current.Include(include));
+            }
+            return await query.FirstOrDefaultAsync(predicate);
         }
 
         public virtual async Task CreateAsync(T item)

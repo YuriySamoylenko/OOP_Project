@@ -29,12 +29,25 @@ namespace Pms.Bll.Services
             task.Priority = model.Priority;
             task.Severity = model.Severity;
             task.SprintId = model.SprintId;
+            task.AssigneeId = model.AssigneeId;
             await this.taskRepos.UpdateAsync(task);
         }
 
         public Task DeleteTask(int id)
         {
             return this.taskRepos.DeleteAsync(id);
+        }
+
+        public async Task<List<TaskModel>> GetTasks(int projectId)
+        {
+            var entities = await this.taskRepos.GetAllAsync(t => t.ProjectId == projectId);
+            return entities.Select(e => new TaskModel(e)).ToList();
+        }
+
+        public async Task<TaskModel> GetTask(int id)
+        {
+            var task = await this.taskRepos.GetByIdAsync(id);
+            return new TaskModel(task);
         }
     }
 }

@@ -157,5 +157,110 @@ namespace Pms.Tests
             // Act
             await _repository.CreateAsync(null!);
         }
+
+        [TestMethod]
+        public async Task GetAllAsync_WithPredicate_ShouldReturnFilteredItems()
+        {
+            // Arrange
+            using (var context = new ApplicationDbContext(_options))
+            {
+                context.Set<Project>().AddRange(
+                    new Project { Name = "Alpha", Code = "A" },
+                    new Project { Name = "Beta", Code = "B" },
+                    new Project { Name = "Gamma", Code = "G" }
+                );
+                await context.SaveChangesAsync();
+            }
+
+            // Act - фільтруємо лише ті, що починаються на 'G'
+            var result = await _repository.GetAllAsync(p => p.Name.StartsWith("G"));
+
+            // Assert
+            Assert.AreEqual(1, result.Count());
+            Assert.AreEqual("Gamma", result.First().Name);
+        }
+
+        [TestMethod]
+        public async Task GetByConditionAsync_ShouldReturnFirstMatchingItem()
+        {
+            // Arrange
+            using (var context = new ApplicationDbContext(_options))
+            {
+                context.Set<Project>().Add(new Project { Name = "UniqueProject", Code = "UP" });
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            var result = await _repository.GetByConditionAsync(p => p.Code == "UP");
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual("UniqueProject", result.Name);
+        }
+
+        [TestMethod]
+        public async Task GetByIdAsync_WithIncludes_ShouldLoadRelatedData()
+        {
+            // Arrange
+            int projectId;
+            using (var context = new ApplicationDbContext(_options))
+            {
+                var project = new Project { Name = "Project with Tasks", Code = "PT" };
+                project.Tasks = new List<PmsTask>
+                {
+                    new PmsTask { Summary = "Task 1", Description = "Desc" }
+                };
+
+                context.Set<Project>().Add(project);
+                await context.SaveChangesAsync();
+                projectId = project.Id;
+            }
+
+            // Act - завантажуємо проект разом із завданнями
+            var result = await _repository.GetByIdAsync(projectId, p => p.Tasks);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.Tasks);
+            Assert.AreEqual(1, result.Tasks.Count);
+            Assert.AreEqual("Task 1", result.Tasks.First().Summary);
+        }
+
+        [TestMethod]
+        public async Task GetAllAsync_WithIncludesAndPredicate_ShouldReturnFullData()
+        {
+            // Arrange
+            using (var context = new ApplicationDbContext(_options))
+            {
+                var project = new Project { Name = "Active Project", Code = "AP" };
+                project.Sprints = new List<Sprint>
+                {
+                    new Sprint { Name = "Sprint 1" }
+                };
+                context.Set<Project>().Add(project);
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            var result = await _repository.GetAllAsync(
+                p => p.Code == "AP",
+                p => p.Sprints
+            );
+
+            // Assert
+            var projectResult = result.FirstOrDefault();
+            Assert.IsNotNull(projectResult);
+            Assert.IsNotNull(projectResult.Sprints);
+            Assert.AreEqual("Sprint 1", projectResult.Sprints.First().Name);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task GetByIdAsync_NonExistingId_ShouldThrowException()
+        {
+            // Act
+            await _repository.GetByIdAsync(999);
+            // Assert - ExpectedException handles this
+        }
     }
 }
