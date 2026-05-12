@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Pms.Bll.Interfaces;
 using Pms.Bll.Services;
 using Pms.Core.Entities;
 using Pms.Core.Enums;
@@ -12,6 +13,7 @@ namespace Pms.Tests
     public class SprintServiceTests
     {
         private Mock<IRepository<Sprint>> _sprintRepoMock;
+        private Mock<IParticipantService> _participantServiceMock;
         private SprintService _service;
 
         [TestInitialize]
@@ -19,21 +21,26 @@ namespace Pms.Tests
         {
             _sprintRepoMock = new Mock<IRepository<Sprint>>();
 
-            _service = new SprintService(_sprintRepoMock.Object);
+            _participantServiceMock = new Mock<IParticipantService>();
+
+            _service = new SprintService(_sprintRepoMock.Object, _participantServiceMock.Object);
         }
 
         [TestMethod]
         public async Task CreateSprint_ShouldCallRepository_WithMappedEntity()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var model = new SprintModel
             {
                 Name = "Sprint 1",
                 Status = Status.New,
+                ProjId = 1
             };
+            _participantServiceMock.Setup(m => m.ParticipantCanManageSprints(user.Id, model.ProjId)).ReturnsAsync(true);
 
             // Act
-            await _service.CreateSprint(model);
+            await _service.CreateSprint(model, user);
 
             // Assert
             _sprintRepoMock.Verify(r => r.CreateAsync(It.Is<Sprint>(s => s.Name == model.Name)), Times.Once);
@@ -44,24 +51,24 @@ namespace Pms.Tests
         public async Task CreateSprint_DuplicateNameInSameProject_ShouldThrowException()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var model = new SprintModel { Name = "Sprint 1", ProjId = 1 };
 
+            _participantServiceMock.Setup(m => m.ParticipantCanManageSprints(user.Id, model.ProjId)).ReturnsAsync(true);
             _sprintRepoMock.Setup(r => r.GetByConditionAsync(It.IsAny<Expression<Func<Sprint, bool>>>()))
                             .ReturnsAsync(new Sprint { Name = "Sprint 1", ProjectId = 1 });
 
             // Act
-            await _service.CreateSprint(model);
+            await _service.CreateSprint(model, user);
         }
 
         [TestMethod]
         public async Task UpdateSprint_WhenSprintExists_ShouldUpdateFieldsAndSave()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var sprintId = 10;
             var existingSprint = new Sprint { Id = sprintId, Name = "Old Name" };
-
-            _sprintRepoMock.Setup(r => r.GetByIdAsync(sprintId))
-                           .ReturnsAsync(existingSprint);
 
             var model = new SprintModel
             {
@@ -70,8 +77,12 @@ namespace Pms.Tests
                 Status = Status.InProgress,
             };
 
+            _participantServiceMock.Setup(m => m.ParticipantCanManageSprints(user.Id, model.ProjId)).ReturnsAsync(true);
+            _sprintRepoMock.Setup(r => r.GetByIdAsync(sprintId))
+                           .ReturnsAsync(existingSprint);
+
             // Act
-            await _service.UpdateSprint(model);
+            await _service.UpdateSprint(model, user);
 
             // Assert
             Assert.AreEqual("New Name", existingSprint.Name);
@@ -84,10 +95,12 @@ namespace Pms.Tests
         public async Task DeleteSprint_ShouldCallRepositoryDelete()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var sprintId = 5;
+            _participantServiceMock.Setup(m => m.ParticipantCanManageSprints(user.Id, 1)).ReturnsAsync(true);
 
             // Act
-            await _service.DeleteSprint(sprintId);
+            await _service.DeleteSprint(sprintId, 1, user);
 
             // Assert
             _sprintRepoMock.Verify(r => r.DeleteAsync(sprintId), Times.Once);
@@ -97,15 +110,17 @@ namespace Pms.Tests
         public async Task UpdateSprint_WhenSprintNotFound_ShouldNotCallUpdate()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var sprintId = 1;
+
+            var model = new SprintModel { Id = sprintId, ProjId = 1 };
+            _participantServiceMock.Setup(m => m.ParticipantCanManageSprints(user.Id, model.ProjId)).ReturnsAsync(true);
             _sprintRepoMock.Setup(r => r.GetByIdAsync(sprintId))
                            .ReturnsAsync((Sprint)null!);
 
-            var model = new SprintModel { Id = sprintId };
-
             // Act & Assert
             await Assert.ThrowsExceptionAsync<System.NullReferenceException>(async () =>
-                await _service.UpdateSprint(model));
+                await _service.UpdateSprint(model, user));
 
             _sprintRepoMock.Verify(r => r.UpdateAsync(It.IsAny<Sprint>()), Times.Never);
         }

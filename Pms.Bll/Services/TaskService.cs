@@ -9,19 +9,32 @@ namespace Pms.Bll.Services
     {
         private readonly IRepository<PmsTask> taskRepos;
 
-        public TaskService(IRepository<PmsTask> taskRepos)
+        private readonly IParticipantService participantService;
+
+        public TaskService(IRepository<PmsTask> taskRepos, IParticipantService participantService)
         {
             this.taskRepos = taskRepos;
+            this.participantService = participantService;
         }
 
-        public Task CreateTask(TaskModel model)
+        public async Task CreateTask(TaskModel model, User user)
         {
+            if (!user.CanManageSprints() && !await this.participantService.ParticipantCanManageTasks(user.Id, model.ProjId))
+            {
+                this.ThrowAccessDenied();
+            }
+
             var task = new PmsTask(model);
-            return this.taskRepos.CreateAsync(task);
+            await this.taskRepos.CreateAsync(task);
         }
 
-        public async Task UpdateTask(TaskModel model)
+        public async Task UpdateTask(TaskModel model, User user)
         {
+            if (!user.CanManageSprints() && !await this.participantService.ParticipantCanManageTasks(user.Id, model.ProjId))
+            {
+                this.ThrowAccessDenied();
+            }
+
             var task = await this.taskRepos.GetByIdAsync(model.Id);
             task.Summary = model.Summary;
             task.TaskType = model.TaskType;
@@ -33,9 +46,14 @@ namespace Pms.Bll.Services
             await this.taskRepos.UpdateAsync(task);
         }
 
-        public Task DeleteTask(int id)
+        public async Task DeleteTask(int id, int projId, User user)
         {
-            return this.taskRepos.DeleteAsync(id);
+            if (!user.CanManageSprints() && !await this.participantService.ParticipantCanManageTasks(user.Id, projId))
+            {
+                this.ThrowAccessDenied();
+            }
+
+            await this.taskRepos.DeleteAsync(id);
         }
 
         public async Task<List<TaskModel>> GetTasks(int projectId)
@@ -48,6 +66,11 @@ namespace Pms.Bll.Services
         {
             var task = await this.taskRepos.GetByIdAsync(id);
             return new TaskModel(task);
+        }
+
+        private void ThrowAccessDenied()
+        {
+            throw new UnauthorizedAccessException("User can not perform this action.");
         }
     }
 }

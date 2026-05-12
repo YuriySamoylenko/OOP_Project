@@ -15,8 +15,12 @@ namespace Pms.Core.Entities
 
         public virtual IList<Participant> Participants { get; set; }
 
-        public virtual bool CanViewAllProjects() => false;
+        public virtual bool CanManageProject() => false;
 
-        public virtual bool CanDeleteProject() => false;
+        public virtual bool CanManageUsers() => false;
+
+        public virtual bool CanManageSprints() => false;
+
+        public virtual bool CanManageTasks() => false;
     }
 }

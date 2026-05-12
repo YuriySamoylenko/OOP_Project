@@ -21,6 +21,16 @@ namespace Pms.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<User>()
+                .HasDiscriminator<string>("Discriminator")
+                .HasValue<User>("User")
+                .HasValue<SystemAdmin>("SystemAdmin");
+
+            modelBuilder.Entity<Participant>()
+                .HasDiscriminator<string>("Discriminator")
+                .HasValue<Manager>("Manager")
+                .HasValue<Member>("Member");
+
             modelBuilder.Entity<User>(e => e.Property(p => p.FirstName).IsRequired().HasMaxLength(256));
             modelBuilder.Entity<User>(e => e.Property(p => p.LastName).IsRequired().HasMaxLength(256));
 

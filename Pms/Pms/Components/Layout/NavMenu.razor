@@ -1,6 +1,9 @@
-﻿@implements IDisposable
+﻿@using Microsoft.AspNetCore.Identity
+@using Pms.Core.Entities
+@implements IDisposable
 
 @inject NavigationManager NavigationManager
+@inject UserManager<User> UserManager
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -22,7 +25,7 @@
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @name
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -57,10 +60,24 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+    private string? name;
     private string? currentUrl;
 
-    protected override void OnInitialized()
+    protected async override Task OnInitializedAsync()
     {
+        var authState = await AuthStateTask;
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user != null)
+        {
+            name = user.LastName;
+        }
+        else
+        {
+            name = authState.User.Identity?.Name;
+        }
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
     }

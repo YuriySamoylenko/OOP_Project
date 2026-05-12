@@ -8,6 +8,7 @@
 
 @attribute [Authorize]
 @inject IProjectService ProjectService
+@inject IParticipantService ParticipantService
 @inject UserManager<User> UserManager
 @inject INotificationService Notify
 @inject NavigationManager Nav
@@ -37,7 +38,7 @@
                             <option value="">-- Choose User --</option>
                             @foreach (var user in allUsers.Where(u => !currentParticipants.Any(p => p.UserId == u.Id)))
                             {
-                                <option value="@user.Id">@user.UserName (@user.Email)</option>
+                                <option value="@user.Id">@user.LastName (@user.Email)</option>
                             }
                         </select>
                     </div>
@@ -102,6 +103,9 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
     [Parameter] public int ProjectId { get; set; }
 
     private List<User> allUsers = new();
@@ -117,7 +121,7 @@
     {
         allUsers = UserManager.Users.ToList();
 
-        var participants = await ProjectService.GetParticipants(ProjectId);
+        var participants = await ParticipantService.GetParticipants(ProjectId);
 
         currentParticipants = participants;
 
@@ -128,8 +132,13 @@
     {
         try
         {
-            await ProjectService.AddParticipant(newParticipant);
-            await LoadData();
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await ParticipantService.AddParticipant(newParticipant, user);
+                await LoadData();
+            }
         }
         catch (Exception ex)
         {
@@ -141,8 +150,13 @@
     {
         try
         {
-            await ProjectService.DeleteParticipant(participantId);
-            await LoadData();
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await ParticipantService.DeleteParticipant(participantId, ProjectId, user);
+                await LoadData();
+            }
         }
         catch (Exception ex)
         {

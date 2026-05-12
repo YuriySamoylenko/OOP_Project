@@ -2,8 +2,12 @@
 {
     public class SystemAdmin : User
     {
-        public override bool CanViewAllProjects() => true;
+        public override bool CanManageProject() => true;
 
-        public override bool CanDeleteProject() => true;
+        public override bool CanManageUsers() => true;
+
+        public override bool CanManageSprints() => true;
+
+        public override bool CanManageTasks() => true;
     }
 }

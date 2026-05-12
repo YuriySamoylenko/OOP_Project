@@ -9,13 +9,21 @@ namespace Pms.Bll.Services
     {
         private readonly IRepository<Sprint> sprintRepos;
 
-        public SprintService(IRepository<Sprint> sprintRepos)
+        private readonly IParticipantService participantService;
+
+        public SprintService(IRepository<Sprint> sprintRepos, IParticipantService participantService)
         {
             this.sprintRepos = sprintRepos;
+            this.participantService = participantService;
         }
 
-        public async Task CreateSprint(SprintModel model)
+        public async Task CreateSprint(SprintModel model, User user)
         {
+            if (!user.CanManageSprints() && !await this.participantService.ParticipantCanManageSprints(user.Id, model.ProjId))
+            {
+                this.ThrowAccessDenied();
+            }
+
             var nameExists = await this.sprintRepos.GetByConditionAsync(s => s.ProjectId == model.ProjId && s.Name == model.Name);
 
             if (nameExists != null)
@@ -27,8 +35,13 @@ namespace Pms.Bll.Services
             await this.sprintRepos.CreateAsync(sprint);
         }
 
-        public async Task UpdateSprint(SprintModel model)
+        public async Task UpdateSprint(SprintModel model, User user)
         {
+            if (!user.CanManageSprints() && !await this.participantService.ParticipantCanManageSprints(user.Id, model.ProjId))
+            {
+                this.ThrowAccessDenied();
+            }
+
             var duplicate = await this.sprintRepos.GetByConditionAsync(s => s.ProjectId == model.ProjId && s.Name == model.Name && s.Id != model.Id);
 
             if (duplicate != null)
@@ -42,9 +55,14 @@ namespace Pms.Bll.Services
             await this.sprintRepos.UpdateAsync(sprint);
         }
 
-        public Task DeleteSprint(int id)
+        public async Task DeleteSprint(int id, int projId, User user)
         {
-            return this.sprintRepos.DeleteAsync(id);
+            if (!user.CanManageSprints() && !await this.participantService.ParticipantCanManageSprints(user.Id, projId))
+            {
+                this.ThrowAccessDenied();
+            }
+
+            await this.sprintRepos.DeleteAsync(id);
         }
 
         public async Task<IList<SprintModel>> GetSprints(int projectId)
@@ -57,6 +75,11 @@ namespace Pms.Bll.Services
         {
             var sprint = await this.sprintRepos.GetByIdAsync(id);
             return new SprintModel(sprint);
+        }
+
+        private void ThrowAccessDenied()
+        {
+            throw new UnauthorizedAccessException("User can not perform this action.");
         }
     }
 }

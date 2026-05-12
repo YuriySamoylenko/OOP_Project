@@ -1,6 +1,8 @@
 ﻿@page "/projects/{ProjectId:int}/tasks/{TaskId:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Pms.Bll.Interfaces
+@using Pms.Core.Entities
 @using Pms.Core.Models
 @rendermode InteractiveServer
 
@@ -11,8 +13,10 @@
 @inject ITaskService TaskService
 @inject ISprintService SprintService
 @inject IProjectService ProjectService
+@inject IParticipantService ParticipantService
 @inject INotificationService Notify
 @inject IDataTransfer DataTransfer
+@inject UserManager<User> UserManager
 
 <div class="container py-4">
     <nav aria-label="breadcrumb">
@@ -49,16 +53,19 @@
                     Export Xlsx
                 </button>
             </div>
-            <div>
-                @if (!isEditing)
-                {
-                    <button class="btn btn-outline-primary" @onclick="() => isEditing = true">Edit Task</button>
-                }
-                else
-                {
-                    <button class="btn btn-secondary" @onclick="() => isEditing = false">Cancel</button>
-                }
-            </div>
+            @if (CanManageTasks)
+            {
+                <div>
+                    @if (!isEditing)
+                    {
+                        <button class="btn btn-outline-primary" @onclick="() => isEditing = true">Edit Task</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary" @onclick="() => isEditing = false">Cancel</button>
+                    }
+                </div>
+            }
         </div>
 
         <div class="card shadow-sm">
@@ -101,6 +108,9 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
     [Parameter] public int ProjectId { get; set; }
     [Parameter] public int TaskId { get; set; }
 
@@ -108,6 +118,8 @@
     private TaskModel? model { get; set; }
 
     private bool isEditing = false;
+
+    private bool CanManageTasks;
 
     private IList<SprintModel> availableSprints = new List<SprintModel>();
     private IList<ParticipantModel> projectParticipants = new List<ParticipantModel>();
@@ -120,15 +132,40 @@
             if (task != null) model = task;
         }
 
+        var authState = await AuthStateTask;
+
+        var userEntity = await UserManager.GetUserAsync(authState.User);
+
+        CanManageTasks = userEntity.CanManageTasks() || await ParticipantService.ParticipantCanManageTasks(userEntity.Id, ProjectId);
         availableSprints = await SprintService.GetSprints(ProjectId);
-        projectParticipants = await ProjectService.GetParticipants(ProjectId);
+        projectParticipants = await ParticipantService.GetParticipants(ProjectId);
     }
 
     private async Task HandleUpdate()
     {
-        await TaskService.UpdateTask(model!);
-        isEditing = false;
-        StateHasChanged();
+        try
+        {
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await TaskService.UpdateTask(model!, user);
+                isEditing = false;
+                StateHasChanged();
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+        catch (Exception)
+        {
+            Notify.NotifyError("An error occurred while creating the project.");
+        }
     }
 
     private async Task ExportTask(string format)

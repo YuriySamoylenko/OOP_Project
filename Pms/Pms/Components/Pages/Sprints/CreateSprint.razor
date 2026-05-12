@@ -1,9 +1,12 @@
 ﻿@page "/projects/{ProjectId:int}/sprints/new"
+@using Microsoft.AspNetCore.Identity
 @using Pms.Bll.Interfaces
+@using Pms.Core.Entities
 @using Pms.Core.Models
 @rendermode InteractiveServer
 
 @inject ISprintService SprintService
+@inject UserManager<User> UserManager
 @inject NavigationManager Nav
 @inject INotificationService Notify
 
@@ -36,6 +39,9 @@
 </EditForm>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
     [Parameter] public int ProjectId { get; set; }
     private SprintModel newSprint = new();
 
@@ -48,8 +54,17 @@
     {
         try
         {
-            await SprintService.CreateSprint(newSprint);
-            Nav.NavigateTo($"/projects/{ProjectId}");
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await SprintService.CreateSprint(newSprint, user);
+                Nav.NavigateTo($"/projects/{ProjectId}");
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
         }
         catch (InvalidOperationException ex)
         {

@@ -1,11 +1,14 @@
 ﻿@page "/projects/edit/{Id:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Pms.Bll.Interfaces
+@using Pms.Core.Entities
 @using Pms.Core.Models
 @rendermode InteractiveServer
 
 @attribute [Authorize]
 @inject IProjectService ProjectService
+@inject UserManager<User> UserManager
 @inject NavigationManager Nav
 @inject INotificationService Notify
 
@@ -39,6 +42,9 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
     [Parameter] public int Id { get; set; }
 
     [SupplyParameterFromForm(FormName = "ProjectEntryForm")]
@@ -65,8 +71,17 @@
         {
             try
             {
-                await ProjectService.UpdateProject(projectModel);
-                Nav.NavigateTo("/projects");
+                var authState = await this.AuthStateTask;
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    await ProjectService.UpdateProject(projectModel, user);
+                    Nav.NavigateTo("/projects");
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Notify.NotifyError(ex.Message);
             }
             catch (InvalidOperationException ex)
             {

@@ -27,6 +27,5 @@ namespace Pms.Core.Models
         [Required(ErrorMessage = "Please select a status")]
         public Status Status { get; set; }
         public DateTime Created { get; }
-        public bool CanDelete { get; set; }
     }
 }

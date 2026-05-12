@@ -175,7 +175,7 @@ namespace Pms.Dal.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Participants");
+                    b.ToTable("Participants", (string)null);
 
                     b.HasDiscriminator().HasValue("Participant");
 
@@ -238,7 +238,7 @@ namespace Pms.Dal.Migrations
 
                     b.HasIndex("SprintId");
 
-                    b.ToTable("Tasks");
+                    b.ToTable("Tasks", (string)null);
                 });
 
             modelBuilder.Entity("Pms.Core.Entities.Project", b =>
@@ -268,7 +268,7 @@ namespace Pms.Dal.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("Pms.Core.Entities.Sprint", b =>
@@ -298,7 +298,7 @@ namespace Pms.Dal.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Sprints");
+                    b.ToTable("Sprints", (string)null);
                 });
 
             modelBuilder.Entity("Pms.Core.Entities.User", b =>

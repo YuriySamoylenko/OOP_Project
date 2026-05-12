@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Pms.Bll.Interfaces;
+﻿using Pms.Bll.Interfaces;
 using Pms.Core.Entities;
 using Pms.Core.Interfaces;
 using Pms.Core.Models;
@@ -9,17 +8,19 @@ namespace Pms.Bll.Services
     public class ProjectService : IProjectService
     {
         private readonly IRepository<Project> projectRepos;
-        private readonly IRepository<Participant> participntRepos;
-        private readonly UserManager<User> userManager;
 
-        public ProjectService(IRepository<Project> projectRepos, IRepository<Participant> participntRepos)
+        public ProjectService(IRepository<Project> projectRepos)
         {
             this.projectRepos = projectRepos;
-            this.participntRepos = participntRepos;
         }
 
-        public async Task CreateProject(ProjectModel model)
+        public async Task CreateProject(ProjectModel model, User user)
         {
+            if (!user.CanManageProject())
+            {
+                this.ThrowAccessDenied();
+            }
+
             var existing = await this.projectRepos.GetByConditionAsync(p => p.Name == model.Name);
             if (existing != null)
             {
@@ -27,12 +28,18 @@ namespace Pms.Bll.Services
             }
 
             var project = new Project(model);
+            project.Code = "";
             await this.projectRepos.CreateAsync(project);
             project.Code = $"Proj-{project.Id}";
         }
 
-        public async Task UpdateProject(ProjectModel model)
+        public async Task UpdateProject(ProjectModel model, User user)
         {
+            if (!user.CanManageProject())
+            {
+                this.ThrowAccessDenied();
+            }
+
             var duplicate = await this.projectRepos.GetByConditionAsync(p => p.Name == model.Name && p.Id != model.Id);
 
             if (duplicate != null)
@@ -45,52 +52,22 @@ namespace Pms.Bll.Services
             await this.projectRepos.UpdateAsync(project);
         }
 
-        public Task DeleteProject(int id)
+        public Task DeleteProject(int id, User user)
         {
-            return this.projectRepos.DeleteAsync(id);
-        }
-
-        public Task AddParticipant(ParticipantModel model)
-        {
-            Participant participant = this.CreateParticipant(model);
-            return this.participntRepos.CreateAsync(participant);
-        }
-
-        public async Task UpdateParticipant(ParticipantModel model)
-        {
-            var existingParticipant = await this.participntRepos.GetByIdAsync(model.Id);
-            if (existingParticipant != null && ((model.Manager && existingParticipant is Member)
-                || (!model.Manager && existingParticipant is Manager)))
+            if (!user.CanManageProject())
             {
-                await this.participntRepos.DeleteAsync(existingParticipant.Id);
-                Participant participant = this.CreateParticipant(model);
-                await this.participntRepos.CreateAsync(participant);
+                this.ThrowAccessDenied();
             }
+
+            return this.projectRepos.DeleteAsync(id);
         }
 
         public async Task<IList<ProjectModel>> GetProjects(User user)
         {
-            var userCanDeleteProjects = user.CanDeleteProject();
-            var entities = user.CanViewAllProjects()
+            var entities = user.CanManageProject()
                 ? await this.projectRepos.GetAllAsync()
                 : await this.projectRepos.GetAllAsync(p => p.Participants.Any(pp => pp.UserId == user.Id));
-            return entities.Select(e => new ProjectModel(e) { CanDelete = userCanDeleteProjects }).ToList();
-        }
-
-        public Task DeleteParticipant(int id)
-        {
-            return this.participntRepos.DeleteAsync(id);
-        }
-
-        public async Task<IList<ParticipantModel>> GetParticipants(int projId)
-        {
-            var entities = await this.participntRepos.GetAllAsync(p => p.ProjectId == projId, p => p.User);
-            return entities.Select(e => new ParticipantModel(e, e.User.LastName, e.User.Email)).ToList();
-        }
-
-        public async Task<Participant> GetParticipant(int projId, string userId)
-        {
-            return await this.participntRepos.GetByConditionAsync(p => p.ProjectId == projId && p.UserId == userId);
+            return entities.Select(e => new ProjectModel(e)).ToList();
         }
 
         public async Task<ProjectModel> GetProject(int id)
@@ -99,12 +76,9 @@ namespace Pms.Bll.Services
             return new ProjectModel(project);
         }
 
-        private Participant CreateParticipant(ParticipantModel model)
+        private void ThrowAccessDenied()
         {
-            Participant participant = model.Manager ? new Manager() : new Member();
-            participant.ProjectId = model.ProjId;
-            participant.UserId = model.UserId;
-            return participant;
+            throw new UnauthorizedAccessException("User can not perform this action.");
         }
     }
 }

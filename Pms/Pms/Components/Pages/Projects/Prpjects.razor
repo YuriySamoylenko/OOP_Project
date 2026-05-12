@@ -11,15 +11,20 @@
 @inject UserManager<User> UserManager
 @inject IProjectService ProjectService
 @inject NavigationManager NavigationManager
+@inject INotificationService Notify
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Projects</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">Projects Management</h1>
-        <button class="btn btn-primary shadow-sm" @onclick="CreateNewProject">
-            <span class="bi bi-plus-lg me-1"></span> New Project
-        </button>
+        @if (canManageProjects)
+        {
+            <button class="btn btn-primary shadow-sm" @onclick="CreateNewProject">
+                <span class="bi bi-plus-lg me-1"></span> New Project
+            </button>
+        }
     </div>
 
     @if (projects == null)
@@ -33,7 +38,14 @@
     else if (!projects.Any())
     {
         <div class="alert alert-info shadow-sm" role="alert">
-            No projects found. Click "New Project" to get started!
+            @if (canManageProjects)
+            {
+                @:No projects found. Click 'New Project' to get started!
+            }
+            else
+            {
+                @:No projects found. Contact System Administrator to add you to a project
+            }
         </div>
     }
     else
@@ -65,11 +77,11 @@
                                     </td>
                                     <td class="align-middle">
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" @onclick="() => EditProject(project.Id)">
-                                                <span class="bi bi-pencil"></span> Edit
-                                            </button>
-                                            @if (project.CanDelete)
+                                            @if (canManageProjects)
                                             {
+                                                <button class="btn btn-outline-primary" @onclick="() => EditProject(project.Id)">
+                                                    <span class="bi bi-pencil"></span> Edit
+                                                </button>
                                                 <button class="btn btn-outline-danger" @onclick="() => DeleteProject(project.Id)">
                                                     <span class="bi bi-trash"></span> Delete
                                                 </button>
@@ -90,10 +102,17 @@
     [CascadingParameter]
     private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
 
+    private bool canManageProjects;
+
     private IList<ProjectModel>? projects;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateTask;
+
+        var userEntity = await UserManager.GetUserAsync(authState.User);
+
+        canManageProjects = userEntity.CanManageProject();
         await LoadProjects();
     }
 
@@ -113,8 +132,20 @@
 
     private async Task DeleteProject(int id)
     {
-        await ProjectService.DeleteProject(id);
-        await LoadProjects();
+        try
+        {
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await ProjectService.DeleteProject(id, user);
+                await LoadProjects();
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
     }
 
     private string GetStatusClass(Status status) => status switch

@@ -1,14 +1,18 @@
 ﻿@page "/projects/{ProjectId:int}/sprints/{SprintId:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Pms.Bll.Interfaces
+@using Pms.Core.Entities
 @using Pms.Core.Models
 @using Pms.Core.Enums
 @rendermode InteractiveServer
 
 @attribute [Authorize]
 @inject NavigationManager Nav
+@inject UserManager<User> UserManager
 @inject ISprintService SprintService
 @inject ITaskService TaskService
+@inject IParticipantService ParticipantService
 @inject INotificationService Notify
 
 <div class="container py-4">
@@ -42,18 +46,21 @@
                     <span>Editing Sprint</span>
                 }
             </h2>
-            <div>
-                @if (!isEditing)
-                {
-                    <button class="btn btn-outline-primary" @onclick="() => isEditing = true">
-                        <i class="bi bi-pencil"></i> Edit Sprint
-                    </button>
-                }
-                else
-                {
-                    <button class="btn btn-secondary" @onclick="() => isEditing = false">Cancel</button>
-                }
-            </div>
+            @if (CanManageSprints)
+            {
+                <div>
+                    @if (!isEditing)
+                    {
+                        <button class="btn btn-outline-primary" @onclick="() => isEditing = true">
+                            <i class="bi bi-pencil"></i> Edit Sprint
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary" @onclick="() => isEditing = false">Cancel</button>
+                    }
+                </div>
+            }
         </div>
 
         <div class="card shadow-sm mb-4">
@@ -107,9 +114,12 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <span class="fw-bold">Tasks in this Sprint</span>
-                <button class="btn btn-sm btn-outline-success" @onclick="GoToAddTask">
-                    <i class="bi bi-plus"></i> Create Task
-                </button>
+                @if (CanManageTasks)
+                {
+                    <button class="btn btn-sm btn-outline-success" @onclick="GoToAddTask">
+                        <i class="bi bi-plus"></i> Create Task
+                    </button>
+                }
             </div>
             <div class="card-body p-0">
                 @if (sprintTasks == null || !sprintTasks.Any())
@@ -159,6 +169,9 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
     [Parameter] public int ProjectId { get; set; }
     [Parameter] public int SprintId { get; set; }
 
@@ -166,15 +179,25 @@
     private List<TaskModel>? sprintTasks;
     private bool isEditing = false;
 
+    private bool CanManageSprints;
+
+    private bool CanManageTasks;
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateTask;
+
+        var userEntity = await UserManager.GetUserAsync(authState.User);
+
+        CanManageSprints = userEntity.CanManageSprints() || await ParticipantService.ParticipantCanManageSprints(userEntity.Id, ProjectId);
+        CanManageTasks = userEntity.CanManageTasks() || await ParticipantService.ParticipantCanManageTasks(userEntity.Id, ProjectId);
         await LoadSprintData();
     }
 
     private async Task LoadSprintData()
     {
         model = await SprintService.GetSprint(SprintId);
-        
+
         if (model != null)
         {
             var allTasks = await TaskService.GetTasks(ProjectId);
@@ -191,7 +214,17 @@
     {
         try
         {
-            await SprintService.UpdateSprint(model);
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await SprintService.UpdateSprint(model, user);
+                Nav.NavigateTo($"/projects/{ProjectId}");
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
         }
         catch (Exception ex)
         {

@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Pms.Bll.Interfaces;
 using Pms.Bll.Services;
 using Pms.Core.Entities;
 using Pms.Core.Enums;
@@ -13,28 +14,34 @@ namespace Pms.Tests
     public class TaskServiceTests
     {
         private Mock<IRepository<PmsTask>> _taskRepoMock;
+        private Mock<IParticipantService> _participantServiceMock;
         private TaskService _service;
 
         [TestInitialize]
         public void Setup()
         {
             _taskRepoMock = new Mock<IRepository<PmsTask>>();
-            _service = new TaskService(_taskRepoMock.Object);
+
+            _participantServiceMock = new Mock<IParticipantService>();
+            _service = new TaskService(_taskRepoMock.Object, _participantServiceMock.Object);
         }
 
         [TestMethod]
         public async Task CreateTask_ShouldInvokeRepository_WithCorrectData()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var model = new TaskModel
             {
                 Summary = "Fix bug",
                 TaskType = TaskType.Bug,
-                Priority = Priority.High
+                Priority = Priority.High,
+                ProjId = 1
             };
+            _participantServiceMock.Setup(m => m.ParticipantCanManageTasks(user.Id, model.ProjId)).ReturnsAsync(true);
 
             // Act
-            await _service.CreateTask(model);
+            await _service.CreateTask(model, user);
 
             // Assert
             _taskRepoMock.Verify(r => r.CreateAsync(It.Is<PmsTask>(t =>
@@ -63,6 +70,7 @@ namespace Pms.Tests
         public async Task UpdateTask_WhenTaskExists_ShouldUpdateAllFields()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var taskId = 101;
             var existingTask = new PmsTask { Id = taskId, Summary = "Old Title" };
 
@@ -77,11 +85,13 @@ namespace Pms.Tests
                 Status = PmsTaskStatus.InProgress,
                 Priority = Priority.Mid,
                 Severity = Severity.Major,
-                SprintId = 5
+                SprintId = 5,
+                ProjId = 1
             };
+            _participantServiceMock.Setup(m => m.ParticipantCanManageTasks(user.Id, model.ProjId)).ReturnsAsync(true);
 
             // Act
-            await _service.UpdateTask(model);
+            await _service.UpdateTask(model, user);
 
             // Assert
             Assert.AreEqual(model.Summary, existingTask.Summary);
@@ -95,10 +105,12 @@ namespace Pms.Tests
         public async Task DeleteTask_ShouldCallRepositoryDeleteAsync()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var taskId = 42;
+            _participantServiceMock.Setup(m => m.ParticipantCanManageTasks(user.Id, 1)).ReturnsAsync(true);
 
             // Act
-            await _service.DeleteTask(taskId);
+            await _service.DeleteTask(taskId, 1, user);
 
             // Assert
             _taskRepoMock.Verify(r => r.DeleteAsync(taskId), Times.Once);
@@ -108,14 +120,16 @@ namespace Pms.Tests
         public async Task UpdateTask_ShouldAssignSprintIdCorrecty()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var taskId = 1;
             var task = new PmsTask { Id = taskId };
             _taskRepoMock.Setup(r => r.GetByIdAsync(taskId)).ReturnsAsync(task);
 
-            var model = new TaskModel { Id = taskId, SprintId = 99 };
+            var model = new TaskModel { Id = taskId, SprintId = 99, ProjId = 1 };
+            _participantServiceMock.Setup(m => m.ParticipantCanManageTasks(user.Id, model.ProjId)).ReturnsAsync(true);
 
             // Act
-            await _service.UpdateTask(model);
+            await _service.UpdateTask(model, user);
 
             // Assert
             Assert.AreEqual(99, task.SprintId);
@@ -175,14 +189,16 @@ namespace Pms.Tests
         public async Task UpdateTask_ShouldUpdateAssigneeId()
         {
             // Arrange
+            var user = new SystemAdmin { Id = "u1" };
             var taskId = 5;
             var existingTask = new PmsTask { Id = taskId, AssigneeId = "old-user" };
             _taskRepoMock.Setup(r => r.GetByIdAsync(taskId)).ReturnsAsync(existingTask);
 
-            var model = new TaskModel { Id = taskId, AssigneeId = "new-user" };
+            var model = new TaskModel { Id = taskId, AssigneeId = "new-user", ProjId = 1 };
+            _participantServiceMock.Setup(m => m.ParticipantCanManageTasks(user.Id, model.ProjId)).ReturnsAsync(true);
 
             // Act
-            await _service.UpdateTask(model);
+            await _service.UpdateTask(model, user);
 
             // Assert
             Assert.AreEqual("new-user", existingTask.AssigneeId);

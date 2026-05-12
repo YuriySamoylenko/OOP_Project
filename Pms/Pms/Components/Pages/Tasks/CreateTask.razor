@@ -7,8 +7,11 @@
 @rendermode InteractiveServer
 
 @attribute [Authorize]
+@inject ISprintService SprintService
 @inject UserManager<User> UserManager
+@inject INotificationService Notify
 @inject ITaskService TaskService
+@inject IParticipantService ParticipantService
 @inject NavigationManager Nav
 
 <div class="container py-4">
@@ -16,7 +19,7 @@
     <hr />
 
     <div class="card shadow-sm p-4" style="max-width: 800px;">
-        <TaskEditor Model="newTask" OnSave="HandleCreate" />
+        <TaskEditor Model="newTask" Sprints="availableSprints" Participants="projectParticipants" OnSave="HandleCreate" />
         <button class="btn btn-link mt-2" @onclick="Cancel">Back to Board</button>
     </div>
 </div>
@@ -29,6 +32,9 @@
     [SupplyParameterFromForm(FormName = "TaskCreateForm")]
     private TaskModel newTask { get; set; } = new();
 
+    private IList<SprintModel> availableSprints = new List<SprintModel>();
+    private IList<ParticipantModel> projectParticipants = new List<ParticipantModel>();
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await this.AuthStateTask;
@@ -38,12 +44,34 @@
             newTask.CreatorId = user.Id;
         }
         newTask.ProjId = ProjectId;
+        availableSprints = await SprintService.GetSprints(ProjectId);
+        projectParticipants = await ParticipantService.GetParticipants(ProjectId);
     }
 
     private async Task HandleCreate()
     {
-        await TaskService.CreateTask(newTask);
-        Nav.NavigateTo($"/projects/{ProjectId}");
+        try
+        {
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await TaskService.CreateTask(newTask, user);
+                Nav.NavigateTo($"/projects/{ProjectId}");
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+        catch (Exception)
+        {
+            Notify.NotifyError("An error occurred while creating the project.");
+        }
     }
 
     private void Cancel() => Nav.NavigateTo($"/projects/{ProjectId}");

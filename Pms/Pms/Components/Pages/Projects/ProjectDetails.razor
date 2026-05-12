@@ -1,6 +1,8 @@
 ﻿@page "/projects/{Id:int}"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Pms.Bll.Interfaces
+@using Pms.Core.Entities
 @using Pms.Core.Enums
 @using Pms.Core.Models
 @rendermode InteractiveServer
@@ -9,7 +11,10 @@
 @inject IProjectService ProjectService
 @inject ISprintService SprintService
 @inject ITaskService TaskService
+@inject IParticipantService ParticipantService
 @inject NavigationManager Nav
+@inject UserManager<User> UserManager
+@inject INotificationService Notify
 
 <div class="container-fluid py-4">
     @if (project == null)
@@ -64,9 +69,12 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <span class="fw-bold">Project Tasks</span>
-                        <button class="btn btn-sm btn-success" @onclick="GoToCreateTask">
-                            <span class="bi bi-plus"></span> Add Task
-                        </button>
+                        @if (CanManageTasks)
+                        {
+                            <button class="btn btn-sm btn-success" @onclick="GoToCreateTask">
+                                <span class="bi bi-plus"></span> Add Task
+                            </button>
+                        }
                     </div>
                     <div class="card-body p-0">
                         @* Changed p-0 for table alignment *@
@@ -101,9 +109,15 @@
                                                 <td><span class="badge bg-info">@task.Status</span></td>
                                                 <td>@task.Priority</td>
                                                 <td class="text-end">
-                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToEditTask(task.Id)">
-                                                        Edit
-                                                    </button>
+                                                    @if (CanManageTasks)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToEditTask(task.Id)">
+                                                            Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => DeleteTask(task.Id)">
+                                                            Delete
+                                                        </button>
+                                                    }
                                                 </td>
                                             </tr>
                                         }
@@ -119,9 +133,12 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <span class="fw-bold"><i class="bi bi-calendar3 me-2"></i>Sprints</span>
-                        <button class="btn btn-sm btn-success" @onclick="GoToCreateSprint">
-                            <span class="bi bi-plus-circle"></span> Create Sprint
-                        </button>
+                        @if (CanManageSprints)
+                        {
+                            <button class="btn btn-sm btn-success" @onclick="GoToCreateSprint">
+                                <span class="bi bi-plus-circle"></span> Create Sprint
+                            </button>
+                        }
                     </div>
                     <div class="card-body p-0">
                         @if (sprints == null || !sprints.Any())
@@ -157,9 +174,15 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-end">
-                                                    <button class="btn btn-sm btn-outline-primary" title="Edit Sprint" @onclick="() => GoToEditSprint(sprint.Id)">
-                                                        Edit
-                                                    </button>
+                                                    @if (CanManageSprints)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-primary" title="Edit Sprint" @onclick="() => GoToEditSprint(sprint.Id)">
+                                                            Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-primary" title="Edit Sprint" @onclick="() => DeleteSprint(sprint.Id)">
+                                                            Delete
+                                                        </button>
+                                                    }
                                                 </td>
                                             </tr>
                                         }
@@ -175,6 +198,8 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
     [Parameter] public int Id { get; set; }
 
     private IList<SprintModel> sprints = new List<SprintModel>();
@@ -182,8 +207,19 @@
 
     private ProjectModel? project;
 
+    private bool CanManageSprints;
+
+    private bool CanManageTasks;
+
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateTask;
+
+        var userEntity = await UserManager.GetUserAsync(authState.User);
+
+        CanManageSprints = userEntity.CanManageSprints() || await ParticipantService.ParticipantCanManageSprints(userEntity.Id, Id);
+        CanManageTasks = userEntity.CanManageTasks() || await ParticipantService.ParticipantCanManageTasks(userEntity.Id, Id);
+
         var model = await ProjectService.GetProject(Id);
         if (model == null)
         {
@@ -195,8 +231,20 @@
         var taskModels = await TaskService.GetTasks(Id);
         tasks = taskModels;
 
+        await LoadTasks();
+        await LoadSprints();
+    }
+
+    private async Task LoadSprints()
+    {
         var sprintModels = await SprintService.GetSprints(Id);
         sprints = sprintModels;
+    }
+
+    private async Task LoadTasks()
+    {
+        var taskModels = await TaskService.GetTasks(Id);
+        tasks = taskModels;
     }
 
     private void GoBack() => Nav.NavigateTo("/projects");
@@ -209,6 +257,42 @@
     private void GoToEditSprint(int sprintId) => Nav.NavigateTo($"/projects/{Id}/sprints/{sprintId}");
 
     private void GoToParticipants() => Nav.NavigateTo($"/projects/{Id}/participants");
+
+    private async Task DeleteSprint(int id)
+    {
+        try
+        {
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await SprintService.DeleteSprint(id, Id, user);
+                await LoadSprints();
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+    }
+
+    private async Task DeleteTask(int id)
+    {
+        try
+        {
+            var authState = await this.AuthStateTask;
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                await TaskService.DeleteTask(id, Id, user);
+                await LoadTasks();
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+    }
 
     private string GetStatusClass(Status status) => status switch
     {

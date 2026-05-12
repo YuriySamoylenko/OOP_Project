@@ -5,24 +5,14 @@ namespace Pms.Bll.Interfaces
 {
     public interface IProjectService
     {
-        Task CreateProject(ProjectModel model);
+        Task CreateProject(ProjectModel model, User user);
 
-        Task UpdateProject(ProjectModel model);
+        Task UpdateProject(ProjectModel model, User user);
 
-        Task DeleteProject(int id);
+        Task DeleteProject(int id, User user);
 
         Task<IList<ProjectModel>> GetProjects(User user);
 
         Task<ProjectModel> GetProject(int id);
-
-        Task AddParticipant(ParticipantModel model);
-
-        Task UpdateParticipant(ParticipantModel model);
-
-        Task DeleteParticipant(int id);
-
-        Task<IList<ParticipantModel>> GetParticipants(int projId);
-
-        Task<Participant> GetParticipant(int projId, string userId);
     }
 }
