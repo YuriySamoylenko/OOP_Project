@@ -28,6 +28,15 @@
             anchorElement.remove();
             URL.revokeObjectURL(url);
         }
+        window.downloadFileFromText = (fileName, textContent) => {
+            const blob = new Blob([textContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = fileName;
+            anchor.click();
+            URL.revokeObjectURL(url);
+        }
     </script>
 </body>
 

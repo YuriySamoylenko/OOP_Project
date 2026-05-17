@@ -66,19 +66,19 @@ namespace Pms.Bll.Services
         public async Task<bool> ParticipantCanManageParticipants(string userId, int projId)
         {
             var participant = await this.participntRepos.GetByConditionAsync(p => p.ProjectId == projId && p.UserId == userId);
-            return participant != null && participant is Manager;
+            return participant != null && participant.CanManageParticipants();
         }
 
         public async Task<bool> ParticipantCanManageSprints(string userId, int projId)
         {
             var participant = await this.participntRepos.GetByConditionAsync(p => p.ProjectId == projId && p.UserId == userId);
-            return participant != null && participant is Manager;
+            return participant != null && participant.CanManageSprints();
         }
 
         public async Task<bool> ParticipantCanManageTasks(string userId, int projId)
         {
             var participant = await this.participntRepos.GetByConditionAsync(p => p.ProjectId == projId && p.UserId == userId);
-            return participant != null;
+            return participant != null && participant.CanManageTasks();
         }
 
         private Participant CreateParticipant(ParticipantModel model)

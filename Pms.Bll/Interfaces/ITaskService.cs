@@ -14,5 +14,9 @@ namespace Pms.Bll.Interfaces
         Task<List<TaskModel>> GetTasks(int projectId);
 
         Task<TaskModel> GetTask(int id);
+
+        Task<string> ExportTaskToJsonAsync(int taskId);
+
+        Task ImportTaskFromJsonAsync(string jsonContent, int targetProjectId, string creatorId);
     }
 }

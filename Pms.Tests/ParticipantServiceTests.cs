@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 
 namespace Pms.Tests
 {
+    [TestClass]
     public class ParticipantServiceTests
     {
         private Mock<IRepository<Participant>> _participantRepoMock;

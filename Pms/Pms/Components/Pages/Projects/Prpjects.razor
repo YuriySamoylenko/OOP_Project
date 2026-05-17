@@ -71,7 +71,7 @@
                                         </a>
                                     </td>
                                     <td class="align-middle">
-                                        <span class="badge @GetStatusClass(project.Status)">
+                                        <span class="badge @project.Status.GetStatusClass()">
                                             @project.Status
                                         </span>
                                     </td>
@@ -147,12 +147,4 @@
             Notify.NotifyError(ex.Message);
         }
     }
-
-    private string GetStatusClass(Status status) => status switch
-    {
-        Status.InProgress => "bg-success",
-        Status.New => "bg-info",
-        Status.Completed => "bg-secondary",
-        _ => "bg-dark"
-    };
 }

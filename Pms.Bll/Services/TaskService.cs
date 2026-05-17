@@ -2,6 +2,7 @@
 using Pms.Core.Entities;
 using Pms.Core.Interfaces;
 using Pms.Core.Models;
+using System.Text.Json;
 
 namespace Pms.Bll.Services
 {
@@ -66,6 +67,51 @@ namespace Pms.Bll.Services
         {
             var task = await this.taskRepos.GetByIdAsync(id);
             return new TaskModel(task);
+        }
+
+        public async Task<string> ExportTaskToJsonAsync(int taskId)
+        {
+            var task = await this.taskRepos.GetByIdAsync(taskId);
+            if (task == null)
+            {
+                throw new KeyNotFoundException("Task not found.");
+            }
+
+            var model = new TaskModel
+            {
+                Summary = task.Summary,
+                Description = task.Description,
+                TaskType = task.TaskType,
+                Status = task.Status,
+                Priority = task.Priority,
+                Severity = task.Severity
+            };
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            return JsonSerializer.Serialize(model, options);
+        }
+
+        public async Task ImportTaskFromJsonAsync(string jsonContent, int targetProjectId, string creatorId)
+        {
+            if (string.IsNullOrWhiteSpace(jsonContent))
+            {
+                throw new ArgumentException("File is empty.");
+            }
+
+            var model = JsonSerializer.Deserialize<TaskModel>(jsonContent);
+            if (model == null)
+            {
+                throw new InvalidOperationException("Json format is not correct.");
+            }
+
+            model.ProjId = targetProjectId;
+            model.CreatorId = creatorId;
+            model.SprintId = null;
+
+            var taskEntity = new PmsTask(model);
+
+            await this.taskRepos.CreateAsync(taskEntity);
         }
 
         private void ThrowAccessDenied()

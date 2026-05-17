@@ -52,6 +52,9 @@
                 <button class="btn btn-outline-success" @onclick="@(() => ExportTask("excel"))">
                     Export Xlsx
                 </button>
+                <button class="btn btn-outline-success" @onclick="@(() => ExportTask())">
+                    Export Json
+                </button>
             </div>
             @if (CanManageTasks)
             {
@@ -188,6 +191,21 @@
         catch (Exception ex)
         {
             Notify.NotifyError($"Export failed: {ex.Message}");
+        }
+    }
+
+    private async Task ExportTask()
+    {
+        try
+        {
+            string jsonText = await TaskService.ExportTaskToJsonAsync(TaskId);
+            string fileName = $"task_{TaskId}.json";
+
+            await JS.InvokeVoidAsync("downloadFileFromText", fileName, jsonText);
+        }
+        catch (Exception ex)
+        {
+            Notify.NotifyError(ex.Message);
         }
     }
 

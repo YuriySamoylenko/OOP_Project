@@ -32,7 +32,7 @@
                     </ol>
                 </nav>
                 <h1 class="h2">@project.Name</h1>
-                <span class="badge @GetStatusClass(project.Status)">@project.Status</span>
+                <span class="badge @project.Status.GetStatusClass()">@project.Status</span>
             </div>
 
             <div class="btn-group">
@@ -71,13 +71,18 @@
                         <span class="fw-bold">Project Tasks</span>
                         @if (CanManageTasks)
                         {
-                            <button class="btn btn-sm btn-success" @onclick="GoToCreateTask">
-                                <span class="bi bi-plus"></span> Add Task
-                            </button>
+                            <div>
+                                <label class="btn btn-sm btn-success">
+                                    <i class="bi bi-upload"></i> Import Task from JSON
+                                    <InputFile OnChange="HandleImportJson" style="display: none;" />
+                                </label>
+                                <button class="btn btn-sm btn-success" @onclick="GoToCreateTask">
+                                    <span class="bi bi-plus"></span> Add Task
+                                </button>
+                            </div>
                         }
                     </div>
                     <div class="card-body p-0">
-                        @* Changed p-0 for table alignment *@
                         @if (tasks == null || !tasks.Any())
                         {
                             <div class="text-center py-5 text-muted">
@@ -106,7 +111,7 @@
                                                         @task.Summary
                                                     </a>
                                                 </td>
-                                                <td><span class="badge bg-info">@task.Status</span></td>
+                                                <td><span class="badge @task.Status.GetStatusClass()">@task.Status</span></td>
                                                 <td>@task.Priority</td>
                                                 <td class="text-end">
                                                     @if (CanManageTasks)
@@ -169,7 +174,7 @@
                                                 </td>
                                                 @* <td>@sprint.StartDate.ToShortDateString() - @sprint.EndDate.ToShortDateString()</td> *@
                                                 <td>
-                                                    <span class="badge @(sprint.Status == Status.InProgress ? "bg-success" : "bg-secondary")">
+                                                    <span class="badge @sprint.Status.GetStatusClass()">
                                                         @sprint.Status
                                                     </span>
                                                 </td>
@@ -294,11 +299,29 @@
         }
     }
 
-    private string GetStatusClass(Status status) => status switch
+    private async Task HandleImportJson(InputFileChangeEventArgs e)
     {
-        Status.InProgress => "bg-success",
-        Status.New => "bg-info",
-        Status.Completed => "bg-secondary",
-        _ => "bg-dark"
-    };
+        try
+        {
+            var file = e.File;
+            if (file != null)
+            {
+                using var stream = file.OpenReadStream();
+                using var reader = new StreamReader(stream);
+                string jsonContent = await reader.ReadToEndAsync();
+
+                var authState = await this.AuthStateTask;
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    await TaskService.ImportTaskFromJsonAsync(jsonContent, Id, user.Id);
+                    await LoadTasks();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Notify.NotifyError(ex.Message);
+        }
+    }
 }

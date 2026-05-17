@@ -37,7 +37,7 @@
                 @if (!isEditing)
                 {
                     <span>@model.Name</span>
-                    <span class="badge @(model.Status == Status.InProgress ? "bg-success" : "bg-secondary") ms-2 fs-6">
+                    <span class="badge @(model.Status.GetStatusClass()) ms-2 fs-6">
                         @model.Status
                     </span>
                 }
@@ -93,6 +93,16 @@
                             <div class="col-md-6">
                                 <label class="form-label">Sprint Name</label>
                                 <InputText @bind-Value="model.Name" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <InputSelect @bind-Value="model.Status" class="form-select">
+                                    @foreach (var status in Enum.GetValues<Status>())
+                                    {
+                                        <option value="@status">@status</option>
+                                    }
+                                </InputSelect>
                             </div>
 @*                             <div class="col-md-3">
                                 <label class="form-label">Start Date</label>

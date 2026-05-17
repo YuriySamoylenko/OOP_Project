@@ -219,5 +219,93 @@ namespace Pms.Tests
 
             // Assert - ExpectedException
         }
+
+        [TestMethod]
+        public async Task ExportTaskToJsonAsync_WhenTaskExists_ShouldReturnValidJsonString()
+        {
+            // Arrange
+            var taskId = 1;
+            var existingTask = new PmsTask
+            {
+                Id = taskId,
+                Summary = "Exported Task Summary",
+                Description = "Exported Task Description",
+                TaskType = TaskType.Bug,
+                Status = PmsTaskStatus.ToDo,
+                Priority = Priority.High,
+                Severity = Severity.Critical
+            };
+
+            _taskRepoMock.Setup(r => r.GetByIdAsync(taskId))
+                         .ReturnsAsync(existingTask);
+
+            // Act
+            var jsonResult = await _service.ExportTaskToJsonAsync(taskId);
+
+            // Assert
+            Assert.IsNotNull(jsonResult);
+            Assert.IsTrue(jsonResult.Contains("\"Summary\": \"Exported Task Summary\""));
+            Assert.IsTrue(jsonResult.Contains("\"Description\": \"Exported Task Description\""));
+
+            _taskRepoMock.Verify(r => r.GetByIdAsync(taskId), Times.Once);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(KeyNotFoundException))]
+        public async Task ExportTaskToJsonAsync_WhenTaskNotFound_ShouldThrowKeyNotFoundException()
+        {
+            // Arrange
+            var taskId = 999;
+            _taskRepoMock.Setup(r => r.GetByIdAsync(taskId))
+                         .ReturnsAsync((PmsTask)null!);
+
+            // Act
+            await _service.ExportTaskToJsonAsync(taskId);
+
+            // Assert - ExpectedException
+        }
+
+        [TestMethod]
+        public async Task ImportTaskFromJsonAsync_WithValidJson_ShouldCreateTaskWithOverriddenContext()
+        {
+            // Arrange
+            var targetProjectId = 10;
+            var creatorId = "user-admin-123";
+            var jsonContent = "{\n  \"Summary\": \"Imported Task\",\n  \"Description\": \"Description from JSON\"\n}";
+
+            // Act
+            await _service.ImportTaskFromJsonAsync(jsonContent, targetProjectId, creatorId);
+
+            // Assert
+            _taskRepoMock.Verify(r => r.CreateAsync(It.Is<PmsTask>(t =>
+                t.Summary == "Imported Task" &&
+                t.Description == "Description from JSON" &&
+                t.ProjectId == targetProjectId &&
+                t.CreatorId == creatorId &&
+                t.SprintId == null)), Times.Once);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public async Task ImportTaskFromJsonAsync_WhenJsonIsEmptyOrWhitespace_ShouldThrowArgumentException()
+        {
+            // Act
+            await _service.ImportTaskFromJsonAsync("   ", 1, "user-id");
+
+            // Assert - ExpectedException
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task ImportTaskFromJsonAsync_WhenJsonIsInvalid_ShouldThrowInvalidOperationException()
+        {
+            // Arrange
+            var invalidJson = "null";
+
+            // Act
+            await _service.ImportTaskFromJsonAsync(invalidJson, 1, "user-id");
+
+            // Assert - ExpectedException
+        }
     }
 }
