@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Презентація курсового проєкту</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* ОСНОВНІ НАЛАШТУВАННЯ */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #111;
+            display: grid;
+            gap: 40px;
+            grid-template-columns: 1fr;
+            margin: 0;
+            padding: 40px 0;
+            place-items: center;
+        }
+
+        .slide-container {
+            align-items: flex-start;
+            background-color: #000;
+            border-radius: 0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            font-family: 'Urbanist', sans-serif;
+            height: 720px;
+            justify-content: center;
+            overflow: hidden;
+            padding: 80px;
+            position: relative;
+            width: 1280px;
+            color: #f5f5f5;
+        }
+
+        /* ДЕКОРАТИВНІ ЕЛЕМЕНТИ */
+        .slide-container::after {
+            background: linear-gradient(90deg, #deff9a 0%, transparent 100%);
+            bottom: 40px;
+            content: '';
+            height: 2px;
+            left: 80px;
+            position: absolute;
+            right: 80px;
+            opacity: 0.3;
+        }
+
+        .slide-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(222, 255, 154, 0.08) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .slide-container > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ТИПОГРАФІКА */
+        h1 {
+            font-size: 80px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0;
+            color: #f5f5f5;
+        }
+
+        h1 span {
+            color: #deff9a;
+        }
+
+        .slide-title {
+            font-size: 52px;
+            font-weight: 500;
+            margin-bottom: 40px;
+            text-align: left;
+            width: 100%;
+            border-left: 6px solid #deff9a;
+            padding-left: 25px;
+        }
+
+        h3 {
+            font-size: 26px;
+            font-weight: 500;
+            color: #deff9a;
+            margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        p, li {
+            font-size: 20px;
+            line-height: 1.6;
+            color: #daffde;
+            opacity: 0.9;
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #deff9a;
+            margin-top: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* ЛЕЯУТИ */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .title-layout {
+            text-align: center;
+            width: 100%;
+        }
+
+        .section-title-layout {
+            text-align: center;
+            width: 100%;
+        }
+
+        .section-title-layout h2 {
+            font-size: 72px;
+            color: #deff9a;
+            margin-bottom: 20px;
+        }
+
+        .two-column-tiled {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+        }
+
+        .two-column-tiled > div {
+            background-color: #111;
+            border-radius: 24px;
+            padding: 45px;
+            border: 1px solid rgba(222, 255, 154, 0.1);
+        }
+
+        .three-column-tiled {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            width: 100%;
+        }
+
+        .tile {
+            background-color: #111;
+            border-radius: 24px;
+            padding: 40px;
+            border: 1px solid rgba(222, 255, 154, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tile .icon {
+            font-size: 36px;
+            color: #deff9a;
+            margin-bottom: 20px;
+        }
+
+        code {
+            font-family: monospace;
+            color: #deff9a;
+            background-color: rgba(222, 255, 154, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+
+        .end-layout {
+            text-align: center;
+            width: 100%;
+        }
+
+        .end-layout h1 {
+            font-size: 110px;
+            letter-spacing: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="slide-container" id="slide1">
+    <div class="title-layout">
+        <p class="subtitle">Курсовий проєкт з ООП</p>
+        <h1>Сервіс для <span>управління</span> проєктами</h1>
+        <p style="margin-top: 40px; font-size: 22px;">Розроблення ПЗ з використанням об’єктно-орієнтованої парадигми</p>
+    </div>
+</div>
+
+<div class="slide-container" id="slide2">
+    <div class="section-title-layout">
+        <h2>Огляд та архітектура системи</h2>
+        <p>Фундаментальні принципи побудови та функціональні вимоги</p>
+    </div>
+</div>
+
+<div class="slide-container" id="slide3">
+    <h2 class="slide-title">Концепція та ролі користувачів</h2>
+    <div class="content-area">
+        <div style="margin-bottom: 35px;">
+            <p style="font-size: 22px; margin: 0;"><strong>Цільове призначення:</strong> Автоматизація процесів планування, розподілу та контролю виконання завдань у командній розробці програмного забезпечення.</p>
+        </div>
+        <div class="three-column-tiled">
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-user-gear"></i></div>
+                <h3>SystemAdmin</h3>
+                <p>Має глобальний доступ до системи. Відповідає за створення та адміністрування облікових записів користувачів.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-user-tie"></i></div>
+                <h3>Manager</h3>
+                <p>Керує конкретними проєктами, формує спринти, додає або видаляє учасників команди та контролює беклог.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-user-astronaut"></i></div>
+                <h3>Member</h3>
+                <p>Рядовий учасник команди. Працює із призначеними на нього завданнями, змінює їхні статуси на Kanban-дошці.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide4">
+    <h2 class="slide-title">Трьохшарова структура системи</h2>
+    <div class="content-area">
+        <div class="three-column-tiled">
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-cubes"></i></div>
+                <h3>1. Core (Domain Layer)</h3>
+                <p>Ядро системи. Містить описи бізнес-сутностей (<code>Project</code>, <code>PmsTask</code>, <code>User</code>), системні перерахування (Enums) та інтерфейси репозиторіїв.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-gears"></i></div>
+                <h3>2. Business Logic (BLL)</h3>
+                <p>Шар логіки додатка. Реалізує класи сервісів (<code>TaskService</code>, <code>ProjectService</code>), логіку валідації прав доступу, а також серіалізацію даних.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-window-restore"></i></div>
+                <h3>3. Presentation (UI Layer)</h3>
+                <p>Рівень інтерфейсу. Реалізований на базі технології Blazor Server. Містить Razor-компоненти, сторінки, кастомні класи стилей та сервіси відображення.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide5">
+    <div class="section-title-layout">
+        <h2>Реалізація принципів ООП</h2>
+        <p>Практичне застосування SOLID-концепцій у межах Core та BLL шарів</p>
+    </div>
+</div>
+
+<div class="slide-container" id="slide6">
+    <h2 class="slide-title">Інкапсуляція та Спадкування</h2>
+    <div class="content-area">
+        <div class="three-column-tiled">
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-lock"></i></div>
+                <h3>Інкапсуляція</h3>
+                <p>Ізоляція шару даних. Сервіси бізнес-логіки (наприклад, <code>TaskService</code>) інкапсулюють у собі репозиторії, повністю приховуючи прямий доступ до БД.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-diagram-project"></i></div>
+                <h3>Спадкування</h3>
+                <p>Реалізація відношення «Is-A». Створення спеціалізованих класів <code>SystemAdmin</code> від базового <code>User</code> та сутностей від <code>BaseEntity</code>.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-users-rectangle"></i></div>
+                <h3>Контекстні ролі</h3>
+                <p>Класи учасників командної розробки <code>Manager</code> та <code>Member</code> успадковують базову структуру та поля від спільного класу <code>Participant</code>.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide7">
+    <h2 class="slide-title">Поліморфізм та Абстрактні класи</h2>
+    <div class="content-area">
+        <div class="two-column-tiled">
+            <div>
+                <div style="font-size: 36px; color: #deff9a; margin-bottom: 20px;"><i class="fa-solid fa-eye-slash"></i></div>
+                <h3>Абстрактний клас</h3>
+                <p>Клас <code>BaseEntity</code> оголошено як <code>abstract</code>. Він виступає неповними контрактом об'єктів предметної області, забороняючи пряме створення екземплярів та гарантуючи цілісність архітектури.</p>
+            </div>
+            <div>
+                <div style="font-size: 36px; color: #deff9a; margin-bottom: 20px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <h3>Поліморфізм поведінки</h3>
+                <p>Реалізовано за допомогою перевизначення віртуальних методів перевірки прав доступу (<code>override</code>). Об'єкти класів <code>SystemAdmin</code> та <code>Manager</code> поліморфно заміщують поведінку базових методів лінійки <code>CanManage...()</code>.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide8">
+    <h2 class="slide-title">Інтерфейси та Делегати .NET</h2>
+    <div class="content-area">
+        <div class="two-column-tiled">
+            <div>
+                <div style="font-size: 36px; color: #deff9a; margin-bottom: 20px;"><i class="fa-solid fa-circle-nodes"></i></div>
+                <h3>Інтерфейси (Контракти поведінки)</h3>
+                <p>Реалізують принцип інверсії залежностей (DIP). Сервіси логіки залежать від абстракції <code>IRepository&lt;T&gt;</code>, а не від конкретної БД, що дозволило повністю покрити код юніт-тестами через <code>Mock&lt;T&gt;</code>.</p>
+            </div>
+            <div>
+                <div style="font-size: 36px; color: #deff9a; margin-bottom: 20px;"><i class="fa-solid fa-bolt"></i></div>
+                <h3>Делегати та Події .NET</h3>
+                <p>Спроектовано кастомну підсистему слабкопов'язаних сповіщень на базі патерну «Видавець-Підписник». Сервіс <code>NotificationService</code> використовує подію (<code>event</code>) на основі вбудованого делегата <code>Action&lt;string&gt;</code>.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide9">
+    <div class="section-title-layout">
+        <h2>Технології обробки даних у платформi .NET</h2>
+        <p>Робота з типізованими колекціями, запитами LINQ та збереженням стану</p>
+    </div>
+</div>
+
+<div class="slide-container" id="slide10">
+    <h2 class="slide-title">Серіалізація об'єктів та LINQ запити</h2>
+    <div class="content-area">
+        <div class="three-column-tiled">
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-file-export"></i></div>
+                <h3>JSON Серіалізація</h3>
+                <p>Реалізовано метод експорту завдань у файл. Об'єкт DTO (<code>TaskModel</code>) трансформується у рядок за допомогою високопродуктивного класу <code>JsonSerializer</code>.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-arrow-down-short-wide"></i></div>
+                <h3>Запити LINQ</h3>
+                <p>Використовуються для декларативної фільтрації, проектування та сортування колекцій даних на рівні сервісів за допомогою лямбда-виразів.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-file-import"></i></div>
+                <h3>Десеріалізація</h3>
+                <p>Забезпечує імпорт завдань із конфігураційних JSON-файлів. Об'єкт відновлюється у пам'яті, адаптується під контекст поточного проєкту та записується в БД.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide11">
+    <h2 class="slide-title">Статичні члени та Узагальнення (Generics)</h2>
+    <div class="content-area">
+        <div class="two-column-tiled">
+            <div>
+                <div style="font-size: 36px; color: #deff9a; margin-bottom: 20px;"><i class="fa-solid fa-box-open"></i></div>
+                <h3>Узагальнені колекції (Generics)</h3>
+                <p>Властивості сутностей типізовано за допомогою інтерфейсів <code>IList&lt;T&gt;</code>, а ініціалізація виконується через <code>List&lt;T&gt;</code> із простору <code>Collections.Generic</code>. Це гарантує безпеку типів та виключає boxing/unboxing.</p>
+            </div>
+            <div>
+                <div style="font-size: 36px; color: #deff9a; margin-bottom: 20px;"><i class="fa-solid fa-snowflake"></i></div>
+                <h3>Статичні члени класів</h3>
+                <p>У вебпроєкті реалізовано статичний клас утиліт та методів розширення <code>EnumExtensions</code>. Він дозволяє динамічно мапити логічні перерахування статусів у CSS-класи відображення банерів Bootstrap без виділення об'єктної пам'яті.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container" id="slide12">
+    <div class="end-layout">
+        <h1>The <span>End</span></h1>
+        <p class="subtitle" style="margin-top: 30px;">2026</p>
+    </div>
+</div>
+
+</body>
+</html>

@@ -36,15 +36,18 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-outline-dark" @onclick="GoToParticipants">
-                    <i class="bi bi-people"></i> Manage Team
-                </button>
                 <button class="btn btn-outline-secondary" @onclick="GoBack">
                     <span class="bi bi-arrow-left"></span> Back
                 </button>
-                <button class="btn btn-primary" @onclick="GoToEdit">
-                    <span class="bi bi-pencil"></span> Edit Project
-                </button>
+                @if (CanManageProject)
+                {
+                    <button class="btn btn-outline-dark" @onclick="GoToParticipants">
+                        <i class="bi bi-people"></i> Manage Team
+                    </button>
+                    <button class="btn btn-primary" @onclick="GoToEdit">
+                        <span class="bi bi-pencil"></span> Edit Project
+                    </button>
+                }
             </div>
         </div>
 
@@ -216,12 +219,15 @@
 
     private bool CanManageTasks;
 
+    private bool CanManageProject;
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateTask;
 
         var userEntity = await UserManager.GetUserAsync(authState.User);
 
+        CanManageProject = userEntity.CanManageProject();
         CanManageSprints = userEntity.CanManageSprints() || await ParticipantService.ParticipantCanManageSprints(userEntity.Id, Id);
         CanManageTasks = userEntity.CanManageTasks() || await ParticipantService.ParticipantCanManageTasks(userEntity.Id, Id);
 

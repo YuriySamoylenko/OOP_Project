@@ -2,12 +2,12 @@
 {
     public class Manager : Participant
     {
-        public virtual bool CanManageParticipants()
+        public override bool CanManageParticipants()
         {
             return true;
         }
 
-        public virtual bool CanManageSprints()
+        public override bool CanManageSprints()
         {
             return true;
         }
