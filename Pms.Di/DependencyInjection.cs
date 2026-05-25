@@ -35,6 +35,7 @@ namespace Pms.Di
             services.AddScoped<IDataTransfer, DataTransfer>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddScoped<IParticipantService, ParticipantService>();
+            services.AddScoped<IProjectRoleService, ParticipantService>();
 
             return services;
         }

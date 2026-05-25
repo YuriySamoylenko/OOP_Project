@@ -5,7 +5,7 @@ using Pms.Core.Models;
 
 namespace Pms.Bll.Services
 {
-    public class ParticipantService : IParticipantService
+    public class ParticipantService : IParticipantService, IProjectRoleService
     {
         private readonly IRepository<Participant> participntRepos;
 
@@ -71,7 +71,8 @@ namespace Pms.Bll.Services
 
         public async Task<bool> ParticipantCanManageSprints(string userId, int projId)
         {
-            var participant = await this.participntRepos.GetByConditionAsync(p => p.ProjectId == projId && p.UserId == userId);
+            var participant = await this.participntRepos
+                .GetByConditionAsync(p => p.ProjectId == projId && p.UserId == userId);
             return participant != null && participant.CanManageSprints();
         }
 

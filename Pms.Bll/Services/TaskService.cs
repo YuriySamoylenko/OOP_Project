@@ -10,9 +10,9 @@ namespace Pms.Bll.Services
     {
         private readonly IRepository<PmsTask> taskRepos;
 
-        private readonly IParticipantService participantService;
+        private readonly IProjectRoleService participantService;
 
-        public TaskService(IRepository<PmsTask> taskRepos, IParticipantService participantService)
+        public TaskService(IRepository<PmsTask> taskRepos, IProjectRoleService participantService)
         {
             this.taskRepos = taskRepos;
             this.participantService = participantService;

@@ -9,11 +9,13 @@ using System.Linq.Expressions;
 
 namespace Pms.Tests
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     [TestClass]
     public class SprintServiceTests
     {
         private Mock<IRepository<Sprint>> _sprintRepoMock;
-        private Mock<IParticipantService> _participantServiceMock;
+
+        private Mock<IProjectRoleService> _participantServiceMock;
         private SprintService _service;
 
         [TestInitialize]
@@ -21,10 +23,12 @@ namespace Pms.Tests
         {
             _sprintRepoMock = new Mock<IRepository<Sprint>>();
 
-            _participantServiceMock = new Mock<IParticipantService>();
+            _participantServiceMock = new Mock<IProjectRoleService>();
 
             _service = new SprintService(_sprintRepoMock.Object, _participantServiceMock.Object);
         }
+
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
         [TestMethod]
         public async Task CreateSprint_ShouldCallRepository_WithMappedEntity()

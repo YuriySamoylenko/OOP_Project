@@ -14,7 +14,7 @@ namespace Pms.Tests
     public class TaskServiceTests
     {
         private Mock<IRepository<PmsTask>> _taskRepoMock;
-        private Mock<IParticipantService> _participantServiceMock;
+        private Mock<IProjectRoleService> _participantServiceMock;
         private TaskService _service;
 
         [TestInitialize]
@@ -22,7 +22,7 @@ namespace Pms.Tests
         {
             _taskRepoMock = new Mock<IRepository<PmsTask>>();
 
-            _participantServiceMock = new Mock<IParticipantService>();
+            _participantServiceMock = new Mock<IProjectRoleService>();
             _service = new TaskService(_taskRepoMock.Object, _participantServiceMock.Object);
         }
 

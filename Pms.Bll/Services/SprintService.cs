@@ -9,9 +9,9 @@ namespace Pms.Bll.Services
     {
         private readonly IRepository<Sprint> sprintRepos;
 
-        private readonly IParticipantService participantService;
+        private readonly IProjectRoleService participantService;
 
-        public SprintService(IRepository<Sprint> sprintRepos, IParticipantService participantService)
+        public SprintService(IRepository<Sprint> sprintRepos, IProjectRoleService participantService)
         {
             this.sprintRepos = sprintRepos;
             this.participantService = participantService;

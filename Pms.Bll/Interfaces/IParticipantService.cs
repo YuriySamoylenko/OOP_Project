@@ -1,5 +1,4 @@
 ﻿using Pms.Core.Entities;
-using Pms.Core.Interfaces;
 using Pms.Core.Models;
 
 namespace Pms.Bll.Interfaces
@@ -15,11 +14,5 @@ namespace Pms.Bll.Interfaces
         Task<IList<ParticipantModel>> GetParticipants(int projId);
 
         Task<Participant> GetParticipant(int projId, string userId);
-
-        Task<bool> ParticipantCanManageParticipants(string userId, int projId);
-
-        Task<bool> ParticipantCanManageSprints(string userId, int projId);
-
-        Task<bool> ParticipantCanManageTasks(string userId, int projId);
     }
 }

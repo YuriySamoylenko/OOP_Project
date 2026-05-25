@@ -3,7 +3,6 @@ using Pms.Core.Entities;
 using Pms.Core.Interfaces;
 using Pms.Data;
 using System.Linq.Expressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Pms.Dal
 {
